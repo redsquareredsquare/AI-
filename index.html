@@ -100,19 +100,63 @@
       .booking-float { right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 14px 18px; }
       #toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
     }
-    /* Street scene: people walking back and forth */
-    .street-scene { height: 104px; }
-    .walker {
-      position: absolute; bottom: 22px; left: 0; width: 40px; height: 72px;
-      animation: walk-r var(--d) linear infinite; animation-delay: var(--delay);
-      will-change: transform;
+    /* Street scene: 3D passers-by walking toward the shop door */
+    .street-scene { height: 130px; }
+    @media (min-width: 640px) { .street-scene { height: 150px; } }
+    .scene3d { position: absolute; inset: 0; perspective: 360px; perspective-origin: 50% 30%; }
+    .stage { position: absolute; inset: 0; transform-style: preserve-3d; }
+    .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: linear-gradient(#e6dfd0, #d9d0bd); }
+    .store {
+      position: absolute; left: 50%; top: 12px; width: 140px; height: 86px; margin-left: -70px;
+      background: #463329; border-radius: 4px 4px 0 0; box-shadow: 0 8px 18px rgba(70, 51, 41, .25);
+      transform: translate3d(0, 0, -160px);
     }
-    .walker.is-left { animation-name: walk-l; }
+    .store::before {
+      content: ""; position: absolute; left: -4px; right: -4px; top: 0; height: 16px; border-radius: 3px;
+      background: repeating-linear-gradient(90deg, #a94e23 0 14px, #fffdf8 14px 28px);
+    }
+    .store .sign { position: absolute; top: 24px; left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: .2em; color: #fffdf8; }
+    .store .door {
+      position: absolute; left: 50%; bottom: 0; width: 32px; height: 44px; margin-left: -16px; border-radius: 3px 3px 0 0;
+      background: linear-gradient(#ffd7a0, #f0a860); box-shadow: 0 0 14px 4px rgba(255, 190, 110, .55);
+    }
+    .walker {
+      position: absolute; left: 50%; bottom: 18px; width: 40px; height: 72px; margin-left: -20px;
+      will-change: transform, opacity; animation-duration: var(--d); animation-delay: var(--delay);
+      animation-timing-function: linear; animation-iteration-count: infinite;
+    }
+    .walker.enter-l { animation-name: enter-l; }
+    .walker.enter-r { animation-name: enter-r; }
+    .walker.pass-r { animation-name: pass-r; }
+    .walker.pass-l { animation-name: pass-l; }
     .walker .bob { display: block; animation: bob .5s ease-in-out infinite alternate; }
-    @keyframes walk-r { from { transform: translateX(-60px); } to { transform: translateX(calc(100vw + 60px)); } }
-    @keyframes walk-l { from { transform: translateX(calc(100vw + 60px)); } to { transform: translateX(-60px); } }
+    /* Walk from the front-left/right toward the door, then slip inside and fade out */
+    @keyframes enter-l {
+      0%   { opacity: 0; transform: translate3d(-120px, 0, 80px) scale(1); }
+      8%   { opacity: 1; }
+      75%  { opacity: 1; transform: translate3d(0, 0, -140px) scale(.75); }
+      88%, 100% { opacity: 0; transform: translate3d(0, 0, -150px) scale(.5); }
+    }
+    @keyframes enter-r {
+      0%   { opacity: 0; transform: translate3d(120px, 0, 80px) scale(1); }
+      8%   { opacity: 1; }
+      75%  { opacity: 1; transform: translate3d(0, 0, -140px) scale(.75); }
+      88%, 100% { opacity: 0; transform: translate3d(0, 0, -150px) scale(.5); }
+    }
+    /* Passers-by crossing the foreground, left to right or right to left */
+    @keyframes pass-r {
+      0%   { opacity: 0; transform: translate3d(-240px, 0, 40px); }
+      6%   { opacity: 1; }
+      94%  { opacity: 1; transform: translate3d(240px, 0, 40px); }
+      100% { opacity: 0; transform: translate3d(240px, 0, 40px); }
+    }
+    @keyframes pass-l {
+      0%   { opacity: 0; transform: translate3d(240px, 0, 40px); }
+      6%   { opacity: 1; }
+      94%  { opacity: 1; transform: translate3d(-240px, 0, 40px); }
+      100% { opacity: 0; transform: translate3d(-240px, 0, 40px); }
+    }
     @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
-    @media (min-width: 640px) { .street-scene { height: 120px; } }
     @media (prefers-reduced-motion: reduce) { .walker { display: none; } }
   </style>
 </head>
@@ -195,17 +239,27 @@
       </div>
     </section>
 
-    <!-- Street scene: decorative animation of passers-by -->
+    <!-- Street scene: 3D passers-by walking into the shop -->
     <div aria-hidden="true" class="street-scene relative overflow-hidden bg-[#f0ece3]">
-      <div class="absolute inset-x-0 bottom-[21px] h-px bg-line"></div>
-      <div class="walker" style="--d:14s; --delay:-2s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#a94e23"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#a94e23"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
-      <div class="walker is-left" style="--d:11s; --delay:-6s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#463329"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#463329"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
-      <div class="walker" style="--d:16s; --delay:-9s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#c9a27a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#c9a27a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#5b4a3f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#5b4a3f"/></svg></div>
-      <div class="walker is-left" style="--d:13s; --delay:-1s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#7d8f6a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#7d8f6a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
-      <div class="walker" style="--d:12s; --delay:-11s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#d08c5a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#d08c5a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
-      <div class="walker is-left" style="--d:15s; --delay:-4s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#5b4a3f"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#5b4a3f"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
-      <div class="walker" style="--d:10s; --delay:-7s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#b5654a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#b5654a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
-      <div class="walker is-left" style="--d:17s; --delay:-13s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#8a6e57"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#8a6e57"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
+      <div class="scene3d">
+        <div class="stage">
+          <div class="ground"></div>
+          <div class="store">
+            <div class="sign">日常餃子所</div>
+            <div class="door"></div>
+          </div>
+        <div class="walker enter-l" style="--d:6s; --delay:-0s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#a94e23"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#a94e23"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
+        <div class="walker enter-r" style="--d:6s; --delay:-0.75s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#463329"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#463329"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
+        <div class="walker enter-l" style="--d:6s; --delay:-1.5s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#c9a27a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#c9a27a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#5b4a3f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#5b4a3f"/></svg></div>
+        <div class="walker enter-r" style="--d:6s; --delay:-2.25s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#7d8f6a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#7d8f6a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
+        <div class="walker enter-l" style="--d:6s; --delay:-3s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#d08c5a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#d08c5a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
+        <div class="walker enter-r" style="--d:6s; --delay:-3.75s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#5b4a3f"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#5b4a3f"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
+        <div class="walker enter-l" style="--d:6s; --delay:-4.5s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#b5654a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#b5654a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
+        <div class="walker enter-r" style="--d:6s; --delay:-5.25s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#8a6e57"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#8a6e57"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
+        <div class="walker pass-r" style="--d:13s; --delay:-3s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#7d8f6a"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#7d8f6a"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#463329"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#463329"/></svg></div>
+        <div class="walker pass-l" style="--d:15s; --delay:-9s;"><svg class="bob" viewBox="0 0 40 72" width="40" height="72"><circle cx="20" cy="10" r="8" fill="#a94e23"/><rect x="11" y="21" width="18" height="26" rx="8" fill="#a94e23"/><rect x="12" y="46" width="6" height="24" rx="3" fill="#29251f"/><rect x="22" y="46" width="6" height="24" rx="3" fill="#29251f"/></svg></div>
+        </div>
+      </div>
     </div>
 
     <!-- Brand story -->
