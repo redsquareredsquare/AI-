@@ -41,6 +41,31 @@
     html { scroll-behavior: smooth; scroll-padding-top: 88px; }
     body { background: #f7f4ed; color: #29251f; }
     button, a { -webkit-tap-highlight-color: transparent; }
+    .booking-float {
+      position: fixed;
+      right: calc(24px + env(safe-area-inset-right, 0px));
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      z-index: 45;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 52px;
+      padding: 14px 22px;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px;
+      background: #a94e23;
+      color: #fffdf8;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(70,51,41,.22);
+      transition: background .2s, transform .2s;
+    }
+    .booking-float:hover { background: #463329; transform: translateY(-2px); }
+    .booking-float:focus-visible { outline: 3px solid #463329; outline-offset: 4px; }
+    .booking-float svg { width: 20px; height: 20px; flex-shrink: 0; }
+    @media (prefers-reduced-motion: reduce) { .booking-float { transition: none; } }
     .hero-image {
       background-image: linear-gradient(90deg, rgba(26,22,18,.73) 0%, rgba(26,22,18,.46) 47%, rgba(26,22,18,.08) 100%),
         url("https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=2200&q=90");
@@ -67,11 +92,17 @@
     }
     @media (max-width: 640px) {
       .hero-image { background-position: 58% center; }
+      .booking-float { right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 14px 18px; }
+      #toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
     }
   </style>
 </head>
 
 <body class="font-sans antialiased">
+  <a class="booking-float" href="https://calendar.app.google/EaUaPa11zVAhABAA6" target="_blank" rel="noopener noreferrer" aria-label="立即預約（在新分頁開啟 Google 預約頁面）">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 5 3 3 5-5"/></svg>
+    <span>立即預約</span>
+  </a>
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-line/80 bg-cream/95 backdrop-blur-md">
     <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
