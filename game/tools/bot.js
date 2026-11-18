@@ -16,13 +16,13 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
     g.press('start');g.newRun(d);
     const H={};const set=(k,on)=>{if(on&&!H[k]){H[k]=1;g.press(k);}else if(!on&&H[k]){H[k]=0;g.release(k);}};
     const tap=k=>{g.press(k);g.release(k);};
-    const hits={};let prevHp=-1;let t=0,atkCd=0,heavyT=0,dodgeCd=0,deaths={1:0,2:0},bossDeaths={1:0,2:0},fail=null,shopped={},stuckT=0,lastX=0,healCd=0,reaction=()=>Math.random()*.08*SKILL;
-    const dt=1/60;let steps=0,dmgTaken=0,lastHp=0,minHpBoss={1:999,2:999},bossTime={1:0,2:0},bossStartT={};
-    while(steps<60*60*14){
+    const hits={};let prevHp=-1;let t=0,atkCd=0,heavyT=0,dodgeCd=0,deaths={1:0,2:0,3:0},bossDeaths={1:0,2:0,3:0},fail=null,shopped={},stuckT=0,lastX=0,healCd=0,reaction=()=>Math.random()*.08*SKILL;
+    const dt=1/60;let steps=0,dmgTaken=0,lastHp=0,minHpBoss={1:999,2:999,3:999},bossTime={1:0,2:0,3:0},bossStartT={};
+    while(steps<60*60*20){
      steps++;t+=dt;
      const P=g.P,m=g.mode;
      if(m==='win'){break;}
-     if(m==='dead'){set('left',false);set('right',false);if(g.deadT>1.3){deaths[g.worldCh]++;if(g.bossStarted)bossDeaths[g.worldCh]++;g.press('start');g.release('start');}g.step(dt);if(deaths[1]+deaths[2]>30){fail='deaths';break;}continue;}
+     if(m==='dead'){set('left',false);set('right',false);if(g.deadT>1.3){deaths[g.worldCh]++;if(g.bossStarted)bossDeaths[g.worldCh]++;g.press('start');g.release('start');}g.step(dt);if(deaths[1]+deaths[2]+deaths[3]>40){fail='deaths';break;}continue;}
      if(m==='clear'){g.step(dt);if(steps%30===0){g.press('start');g.release('start');}continue;}
      if(g.shopOpen){
       let bought=true;while(bought){bought=false;for(const i of PRI){const it=g.UPG[i];const lv=g.run.up[it.id]||0;const c=Math.round(it.cost*(1+lv*.8));if(lv<it.max&&g.run.ess>=c){g.buy(i);bought=true;break;}}}
@@ -48,6 +48,11 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
         if(e.state==='leap'&&!e.landed&&w(.3/s,1.15/s)){if(Math.abs(e.tx-P.x)<190)want=Math.sign(P.x-e.tx)||1;}
         if(e.state==='leap'&&e.landed&&d<200)want=Math.sign(P.x-e.x)||1;
       }
+      if(e.type==='golem'){
+        if((e.state==='slam'||e.state==='sweep')&&w(e.wind-.22,e.wind+.02)&&d<330)doDodge=true;
+        if(e.state==='roll'&&!e.rolling&&w(.45/s,.68/s)&&d<800)doDodge=true;
+      }
+      if(e.type==='imp'&&e.state==='wind'&&w(.38,.58)&&d<140)doDodge=true;
       if(e.type==='crane'){
         if(e.state==='peck'&&w(e.wind-.22,e.wind+.02)&&d<300)doDodge=true;
         if(e.state==='diveWind'){if(Math.abs(e.tx-P.x)<120)want=Math.sign(P.x-e.tx)||1;}
@@ -74,7 +79,7 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
        const dx=tgt.x-P.x,ad=Math.abs(dx);
        const ty=tgt.y;const air=tgt.y<g.GROUND-60&&tgt.type!=='bat';
        if(tgt.type==='crane'&&tgt.state==='sky'&&P.spellCd<=0&&ad<500){tap('spell');}
-       const range=tgt.type==='boss'?110:tgt.type==='crane'?120:tgt.type==='brute'?120:95;
+       const range=tgt.type==='golem'?140:tgt.type==='boss'?110:tgt.type==='crane'?120:tgt.type==='brute'?120:95;
        if(!want){
          if(ad>range)want=Math.sign(dx);
          else if(ad<range*.55&&tgt.type!=='archer')want=-Math.sign(dx)*0; 
@@ -88,8 +93,9 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
          else tryAtk=true;
        }
      }
-     if(tgt&&(tgt.type==='boss'||tgt.type==='crane')){const bs=tgt;let unsafe=false;
-       if(bs.type==='boss'){if(bs.state==='slash'&&bs.t<bs.wind+.2)unsafe=true;if(['dash','leap','howl','throw','roar','intro'].includes(bs.state))unsafe=true;}
+     if(tgt&&(tgt.type==='boss'||tgt.type==='crane'||tgt.type==='golem')){const bs=tgt;let unsafe=false;
+       if(bs.type==='golem'){if((bs.state==='slam'||bs.state==='sweep')&&bs.t<bs.wind+.3)unsafe=true;if(['geyser','meteor','roll','roar','intro'].includes(bs.state))unsafe=true;}
+       else if(bs.type==='boss'){if(bs.state==='slash'&&bs.t<bs.wind+.2)unsafe=true;if(['dash','leap','howl','throw','roar','intro'].includes(bs.state))unsafe=true;}
        else{if(bs.state==='peck'&&bs.t<bs.wind+.28)unsafe=true;if(['gust','rise','storm','diveWind','dive','roar','intro'].includes(bs.state))unsafe=true;}
        if(unsafe){tryAtk=false;heavyHold=false;if(!doDodge&&Math.abs(tgt.x-P.x)<200&&!want)want=Math.sign(P.x-tgt.x)||1;}}
      if(P.st<38&&!['attack'].includes(P.state)){tryAtk=false;if(P.st<28)heavyHold=false;}
@@ -109,13 +115,13 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
      if(steps%300===0){if(Math.abs(P.x-lastX)<5&&E.length===0&&!g.bossStarted)stuckT++;else stuckT=0;lastX=P.x;if(stuckT>6){fail='stuck@'+Math.round(P.x);break;}}
      g.step(dt);
     }
-    out.push({hits,won:g.mode==='win',fail:fail||(g.mode!=='win'?'timeout':null),t:Math.round(t),deaths:deaths[1]+deaths[2],d1:deaths[1],d2:deaths[2],bd1:bossDeaths[1],bd2:bossDeaths[2],ups:Object.values(g.run?g.run.up:{}).reduce((a,b)=>a+b,0),ess:g.run?g.run.ess:0,ch:g.worldCh});
+    out.push({hits,won:g.mode==='win',fail:fail||(g.mode!=='win'?'timeout':null),t:Math.round(t),deaths:deaths[1]+deaths[2]+deaths[3],d1:deaths[1],d2:deaths[2],d3:deaths[3],bd1:bossDeaths[1],bd2:bossDeaths[2],bd3:bossDeaths[3],ups:Object.values(g.run?g.run.up:{}).reduce((a,b)=>a+b,0),ess:g.run?g.run.ess:0,ch:g.worldCh});
    }
    return out;
   },{d,N,SKILL});
   const w=res.filter(r=>r.won).length,avg=k=>(res.reduce((a,r)=>a+r[k],0)/res.length).toFixed(1);
   const agg={};res.forEach(r=>Object.entries(r.hits).forEach(([k,v])=>agg[k]=(agg[k]||0)+v));console.log('HITS',JSON.stringify(Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,14)));
-  console.log(`diff ${d}: win ${w}/${res.length}  avgTime ${avg('t')}s  deaths ${avg('deaths')} (ch1 ${avg('d1')}, ch2 ${avg('d2')}; boss1 ${avg('bd1')}, boss2 ${avg('bd2')})  ups ${avg('ups')}  fails:`,[...new Set(res.filter(r=>r.fail).map(r=>r.fail))].join(','));
+  console.log(`diff ${d}: win ${w}/${res.length}  avgTime ${avg('t')}s  deaths ${avg('deaths')} (ch1 ${avg('d1')}, ch2 ${avg('d2')}, ch3 ${avg('d3')}; boss1 ${avg('bd1')}, boss2 ${avg('bd2')}, boss3 ${avg('bd3')})  ups ${avg('ups')}  fails:`,[...new Set(res.filter(r=>r.fail).map(r=>r.fail))].join(','));
  }
  console.log('errors',errs.slice(0,5));
  await b.close();
