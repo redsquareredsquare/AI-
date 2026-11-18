@@ -22,6 +22,7 @@ const N=parseInt(process.argv[2]||'10',10), DIFFS=(process.argv[3]||'0,1,2').spl
      steps++;t+=dt;
      const P=g.P,m=g.mode;
      if(m==='win'){break;}
+     if(m==='story'){g.press('start');g.release('start');g.step(dt);continue;}
      if(m==='dead'){set('left',false);set('right',false);if(g.deadT>1.3){deaths[g.worldCh]++;if(g.bossStarted)bossDeaths[g.worldCh]++;g.press('start');g.release('start');}g.step(dt);if(deaths[1]+deaths[2]+deaths[3]>40){fail='deaths';break;}continue;}
      if(m==='clear'){g.step(dt);if(steps%30===0){g.press('start');g.release('start');}continue;}
      if(g.shopOpen){

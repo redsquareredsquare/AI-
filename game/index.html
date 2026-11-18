@@ -75,6 +75,37 @@ const UPG=[
   {id:'quake',name:'裂地',desc:'新招：消耗棍勢的重棍送出裂地衝擊',max:1,cost:150}];
 const ESS={wolf:10,shield:20,archer:15,bat:8,brute:30,imp:12,boss:200,crane:300,golem:420};
 const upgCost=(it,lv)=>Math.round(it.cost*(1+lv*.8));
+// ---------- story text (original) ----------
+const PROLOGUE=['山河失序之年','天上三盞明燈墜落人間','月燈落入黑松嶺','霜燈沉進竹海寒寺','火燈陷入焚天谷底','得燈之妖，各自稱王','崩山之下，一隻石猿睜開了眼','不記來處，只握一根鐵棍','棍上刻著四字：【棍破山河】'];
+const ENDING=['火燈回到天上','三盞明燈重新排成一列','四季又開始輪轉','土地祠的香火一座座亮起','沒有人知道石猿去了哪裡','只聽說山腳下的孩子','撿到過一根鐵棍','棍上的字，已經磨平了'];
+Object.assign(CH[1],{verse:'松濤如墨夜如鐵，狼牙咬碎半輪月。',last:'這月光……原來不刺眼。',epi:'月燈回到天上。黑松嶺的狼，第一次在夜裡睡著了。',
+  talk:['土地：靈蘊是妖散去後留下的氣，留著無用，不如拿來修習。','土地：狼王的刀有時會停一下再落，別急著閃。']});
+Object.assign(CH[2],{verse:'萬竿翠影藏古寺，一聲寒鐘落白霜。',last:'飛了三百年……原來落地是這種感覺。',epi:'霜燈回到天上。寒鐘停了，竹葉上的雪開始融化。',
+  talk:['土地：寺裡的石僧挨得住打，等他砸完地再出手。','土地：那隻鶴在天上待不久，等牠俯衝落地，就是你的機會。']});
+Object.assign(CH[3],{verse:'谷底熔漿千年沸，岩中一顆不冷心。',last:'心……終於涼了。',epi:'火燈回到天上。',
+  talk:['土地：炎靈一閃紅光就要炸，別讓牠貼著你。','土地：魔君胸口那團火就是牠的心，打到牠站不穩，心就露出來了。']});
+const BOSS_CH={boss:1,crane:2,golem:3};
+const LORE=[
+  {id:'player',name:'石猿',title:'崩山之下醒來的猿',where:0,poem:['石中一睡不知年','醒來唯有棍相伴','不問前身誰點化','但隨燈影過千山'],
+   lore:'自崩山之下醒來，不記來處。身旁只有一根鐵棍，棍身刻著「棍破山河」四字。',tip:'閃避的瞬間躲過攻擊就是識破，識破後立刻出棍就是反擊。'},
+  {id:'wolf',name:'黑松狼',title:'嶺上遊牙',where:1,poem:['松影深處眼如燈','三步一嗅五步停','忽然撲起無聲息','月下只聞牙咬風'],
+   lore:'月燈墜嶺之後，狼群夜夜不眠，眼裡映著偷來的光。',tip:'眼睛轉紅就要撲咬。往旁閃開，趁牠收勢出棍。'},
+  {id:'shield',name:'狼盾兵',title:'鐵壁前鋒',where:1,poem:['圓盾舊痕三百道','長槍只朝一方挑','前門鐵壁千斤重','身後空門無人瞧'],
+   lore:'狼王的親兵，只學會了守住前方。',tip:'正面輕棍會被格擋。用重棍、落棍、反擊，或繞到牠背後。'},
+  {id:'archer',name:'狼弓手',title:'松間冷箭',where:1,poem:['不近人前不露形','弦聲未響眼先瞄','一支冷箭橫穿嶺','落葉驚飛鳥離巢'],
+   lore:'總在遠處，總在瞄準。射偏的箭插滿了黑松嶺的樹幹。',tip:'紅色虛線就是箭的去向。跳起或閃避，輕棍也能把箭打落。'},
+  {id:'boss',name:'蒼牙狼王',title:'嶺上妖王',where:1,poem:['披甲持刀鎮嶺頭','偷來月色刃中留','生來怕黑貪燈火','一嶺狼嚎不肯休'],
+   lore:'狼群裡最怕黑的那一隻。得了月燈，便再也不讓夜晚降臨。',tip:'連斬有時會停頓再出刀。半血後會擲出回旋刀，去程回程都要躲。'},
+  {id:'bat',name:'寒寺飛蝠',title:'鐘下黑影',where:2,poem:['寒鐘一響萬蝠驚','倒掛梁間聽佛經','聽了千年不成佛','反把鐘聲當獵聲'],
+   lore:'棲在寒鐘之下，被霜燈的冷光養大。',tip:'盤旋時打不到。跳起空中迴旋，或等牠俯衝時出棍。'},
+  {id:'brute',name:'石僧',title:'守寺石像',where:2,poem:['本是山門一尊像','霜燈照久便成僧','手中石杵三千斤','敲碎經文不念經'],
+   lore:'寺裡原本的石雕護法，被霜燈照了太久，忘了自己為何站在那裡。',tip:'輕棍打不退牠。躲過砸地再進攻，重棍能打破牠的架勢。'},
+  {id:'crane',name:'玄鶴禪仙',title:'寒寺妖仙',where:2,poem:['聽經三百年未悟','銜燈飛上寺頂樓','羽落如刀霜滿地','一聲長唳竹林秋'],
+   lore:'在寒鐘寺聽經三百年仍未開悟，索性叼走霜燈，自封為仙。',tip:'升空時跳起迴旋可以打中。定身術能讓牠直接墜地。'},
+  {id:'imp',name:'炎靈',title:'谷底火種',where:3,poem:['熔漿濺起一星火','化作頑童滿谷跑','見人便要撲懷抱','抱完只剩一縷焦'],
+   lore:'火燈的碎屑化成的小妖，不懂危險，只懂靠近。',tip:'身上閃紅光就要自爆。先手打倒牠，或閃避、跳開。'},
+  {id:'golem',name:'熔山魔君',title:'焚天谷主',where:3,poem:['熔山千丈壓谷底','吞下火燈當作心','燒了千年燒不暖','一身岩甲一身冰'],
+   lore:'原本只是谷底一座冷山。吞下火燈當作心臟之後，便再也停不下燃燒。',tip:'橫掃要跳起，火柱會順著腳下一路噴發。打到破勢時核心外露。'}];
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 let scale=1,dpr=1;
 function resize(){
@@ -137,7 +168,7 @@ function drum(t,v,low){const o=ac.createOscillator(),g=ac.createGain();o.type='s
   noise(.07,v*.5,low?600:1800,'lowpass',musicBus,t);}
 function bell(t){[[196,1,3],[541,.4,1.6],[1058,.18,.8]].forEach(([f,v,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07*v,t+.01);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(musicBus);o.start(t);o.stop(t+d+.05);});}
-function musicState(){if(mode==='title')return'calm';if(mode==='win'||mode==='clear')return'win';if(mode==='dead')return'dead';
+function musicState(){if(mode==='story')return story?story.music:'calm';if(mode==='title')return'calm';if(mode==='win'||mode==='clear')return'win';if(mode==='dead')return'dead';
   if(bossStarted&&boss&&!boss.dead)return boss.phase===2?'boss2':'boss';return'explore';}
 function walkNote(){mel=clamp(mel+[-2,-1,-1,1,1,2][Math.floor(Math.random()*6)],4,12);return SCALE[mel];}
 function schedule(){
@@ -195,6 +226,11 @@ const rushKey=()=>run.gauntlet?'g':run.ch;
 const rushNH=(c,d)=>store.get('gunpo-rushnh-'+c+'-'+d)==='1';
 const getBest=d=>parseFloat(store.get('gunpo-best-'+d))||null;
 saveCache=loadSave();
+let story=null,subtitle=null,shopTalk='',loreSel=0;
+const loreSet=new Set((()=>{try{return JSON.parse(store.get('gunpo-lore')||'[]');}catch(e){return [];}})());
+const loreHas=id=>id==='player'||loreSet.has(id);
+const loreCount=()=>LORE.filter(l=>loreHas(l.id)).length;
+function unlockLore(id){const L=LORE.find(l=>l.id===id);if(!L||loreHas(id))return;loreSet.add(id);store.set('gunpo-lore',JSON.stringify([...loreSet]));toast('百妖錄 新增：'+L.name);}
 const aggr=()=>1/DIFF[run.diff].cd;
 
 // ---------- input ----------
@@ -207,6 +243,7 @@ function press(k){
   audioInit();
   if(k==='mute'){toggleMute();return;}
   if(k==='shake'){shakeOn=!shakeOn;store.set('gunpo-shake',shakeOn?'1':'0');toast('畫面震動：'+(shakeOn?'開':'關'));return;}
+  if(mode==='story'){storyInput(k);return;}
   if(mode==='title'){menuInput(k);return;}
   if(shopOpen){shopInput(k);return;}
   if(run&&run.rush&&(mode==='win'||mode==='dead')&&(k==='pause'||k==='dodge'||k==='heal')){backToRush();return;}
@@ -233,6 +270,7 @@ pad.querySelectorAll('.b').forEach(b=>{
 cv.addEventListener('pointerdown',ev=>{
   audioInit();const r=cv.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*W,y=(ev.clientY-r.top)/r.height*H;
   for(let i=hitRects.length-1;i>=0;i--){const h=hitRects[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.act();return;}}
+  if(mode==='story'){storyInput('start');return;}
   if(mode==='title'||shopOpen)return;
   if(paused){paused=false;return;}
   if(mode!=='play')startOrRetry();
@@ -248,21 +286,27 @@ function pollPad(){
   for(const i in GP_MAP){const b=gp.buttons[i];if(b&&b.pressed)st[GP_MAP[i]]=true;}
   const ax=gp.axes[0]||0,ay=gp.axes[1]||0;
   if(ax<-.4)st.left=true;if(ax>.4)st.right=true;if(ay>.5)st.down=true;
-  if(gp.buttons[9]&&gp.buttons[9].pressed&&mode==='title')st.start=true;
+  const startHeld=!!st.pause;if(startHeld&&mode==='title'){delete st.pause;st.start=true;}
   for(const k of new Set([...Object.keys(st),...Object.keys(gpPrev)])){if(st[k]&&!gpPrev[k])press(k);else if(!st[k]&&gpPrev[k])release(k);}
-  gpPrev=st;
+  gpPrev=st;if(startHeld){gpPrev.pause=true;gpPrev.start=true;}
 }
 
 // ---------- menus ----------
 function mainItems(){
-  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}}]
-    :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}}];
+  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()]
+    :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()];
+}
+function loreItem(){return{label:'百妖錄　'+loreCount()+' / '+LORE.length,act:()=>{titleSub='lore';}};
 }
 function menuInput(k){
   if(titleSub==='main'){const items=mainItems();titleSel=clamp(titleSel,0,items.length-1);
     if(k==='up'||k==='jump'||k==='left')titleSel=(titleSel+items.length-1)%items.length;
     else if(k==='down'||k==='right')titleSel=(titleSel+1)%items.length;
-    else if(k==='start'||k==='attack'||k==='pause')items[titleSel].act();}
+    else if(k==='start'||k==='attack')items[titleSel].act();}
+  else if(titleSub==='lore'){
+    if(k==='up'||k==='jump'||k==='left')loreSel=(loreSel+LORE.length-1)%LORE.length;
+    else if(k==='down'||k==='right')loreSel=(loreSel+1)%LORE.length;
+    else if(k==='dodge'||k==='pause'||k==='heal')titleSub='main';}
   else if(titleSub==='rush'){
     if(k==='left')rushSel=(rushSel+3)%4;
     else if(k==='right')rushSel=(rushSel+1)%4;
@@ -287,13 +331,13 @@ function backToRush(){gauntletNext=0;paused=false;mode='title';titleSub='rush';s
 function newRun(d){
   store.set('gunpo-diff',String(d));
   run={diff:d,ch:1,ng:0,up:{},ess:0,elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0},cp:'start'};
-  hintsSeen={};startPlay('start');
+  hintsSeen={};startStory('序',PROLOGUE,()=>startPlay('start'));
 }
 function continueRun(){run=loadSave();if(!run){saveCache=null;return;}run.stats=run.stats||{hits:0,perfect:0,deaths:0,counters:0};hintsSeen={};startPlay(run.cp||'start');}
 function startPlay(cp){mode='play';paused=false;shopOpen=false;checkpoint=cp;resetWorld(cp);clearBuf();for(const k in held)held[k]=false;}
 function nearShrine(){if(mode!=='play'||bossStarted||!P||P.state==='dead')return null;return SHRINES.find(s=>Math.abs(P.x-s.x)<70)||null;}
 function openShop(sh){
-  if(!sh)return;P.hp=P.maxHp;P.gourd=P.maxGourd;P.st=P.maxSt;P.exhaust=false;checkpoint=sh.id;if(sh.id==='shrine')shrineLit=true;
+  if(!sh)return;shopTalk=(CH[worldCh].talk||[])[sh.id==='start'?0:1]||'';P.hp=P.maxHp;P.gourd=P.maxGourd;P.st=P.maxSt;P.exhaust=false;checkpoint=sh.id;if(sh.id==='shrine')shrineLit=true;
   shopOpen=true;shopSel=0;sfx.shrine();saveRun(sh.id);setP('idle');P.vx=0;for(const k in held)held[k]=false;clearBuf();
 }
 function closeShop(){shopOpen=false;clearBuf();toast('已歇息，進度已存');}
@@ -340,12 +384,12 @@ function spawnChapter(c){
   return[bat(560),wolf(780),bat(900),wolf(1080),bat(1180),bat(1320),brute(1650),bat(1780),archer(1960),brute(2160),bat(2260)];
 }
 function resetWorld(cp){
-  proj=[];parts=[];texts=[];decals=[];clones=[];banner=null;hitstop=0;timeScale=1;slowT=0;shake=0;zoom=1;zoomT=1;zoomTimer=0;zoomFocus=null;
+  proj=[];parts=[];texts=[];decals=[];clones=[];banner=null;subtitle=null;hitstop=0;timeScale=1;slowT=0;shake=0;zoom=1;zoomT=1;zoomTimer=0;zoomFocus=null;
   arena=null;bossStarted=false;boss=null;hintMsg=null;hintQueue=[];worldCh=run.ch;
   applyStats();
   if(cp==='rush'){P=newPlayer(ARENA.l+200);enemies=[];shrineLit=true;if(run.carry){P.hp=run.carry.hp;P.gourd=run.carry.gourd;P.focus=run.carry.focus;run.carry=null;}else run.elapsed=0;camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;startBoss();return;}
   if(cp==='shrine'){P=newPlayer(SHRINE_X+30);enemies=[];shrineLit=true;}
-  else{P=newPlayer(150);shrineLit=false;enemies=spawnChapter(run.ch);showBanner(CH[run.ch].name,CH[run.ch].place,2.6);}
+  else{P=newPlayer(150);shrineLit=false;enemies=spawnChapter(run.ch);showBanner(CH[run.ch].name,CH[run.ch].place,4.2,CH[run.ch].verse);}
   camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;
 }
 function startBoss(){
@@ -362,7 +406,7 @@ function startOrRetry(){
   else return;
   clearBuf();
 }
-function showBanner(t,s,d){banner={t,s,d,life:d};}
+function showBanner(t,s,d,v){banner={t,s,d,v,life:d};}
 function hint(id,text){if(hintsSeen[id])return;hintsSeen[id]=1;hintQueue.push(text);}
 function toast(text){toastMsg={text,life:1.8};}
 function kickZoom(z,dur,focus){if(z>=zoomT||zoomTimer<=0){zoomT=z;zoomTimer=dur;zoomFocus=focus||null;}}
@@ -532,11 +576,12 @@ function damageEnemy(e,hb,mult,ox,main){
   if(e.hp<=0){e.hp=0;killEnemy(e);}
 }
 function killEnemy(e){
-  if(isBoss(e)){e.state='dying';e.t=0;e.frozen=0;timeScale=.3;slowT=1.2;if(e.type!=='crane')sfx.roar();else sfx.screech();shake=14;
+  if(isBoss(e)){const bc=CH[BOSS_CH[e.type]];subtitle={text:bc.boss+'：「'+bc.last+'」',life:4.2};e.state='dying';e.t=0;e.frozen=0;timeScale=.3;slowT=1.2;if(e.type!=='crane')sfx.roar();else sfx.screech();shake=14;
     kickZoom(1.18,2,{x:e.x,y:GROUND-100});proj=proj.filter(p=>p.kind==='quake');e.hasBlade=true;e.rolling=false;return;}
-  e.dead=true;e.state='dead';e.t=0;burst(e.x,e.y-30,26,'#3c3f44',200,.9,400);inkSplat(e.x,7);P.focus=Math.min(3,P.focus+.3*ST.focus);gainEss(e);
+  e.dead=true;e.state='dead';e.t=0;burst(e.x,e.y-30,26,'#3c3f44',200,.9,400);inkSplat(e.x,7);P.focus=Math.min(3,P.focus+.3*ST.focus);gainEss(e);unlockLore(e.type);
 }
 function bossDefeated(e){
+  unlockLore(e.type);
   if(run.rush){
     if(run.gauntlet&&run.ch<3){gauntletNext=3.2;showBanner('下一位',CH[run.ch+1].boss+' · 氣血延續，葫蘆 +1',2.8);return;}
     mode='win';winT=0;step=0;const k=rushKey(),b=rushBest(k,run.diff);rushRecord=!b||run.elapsed<b;
@@ -546,7 +591,8 @@ function bossDefeated(e){
   if(worldCh<3){mode='clear';winT=0;step=0;clearedCh=worldCh;run.ch=worldCh+1;saveRun('start');}
   else{mode='win';winT=0;step=0;newRecord=false;const b=getBest(run.diff);
     if(!run.ng&&(!b||run.elapsed<b)){newRecord=true;store.set('gunpo-best-'+run.diff,String(run.elapsed));}
-    store.set('gunpo-save',JSON.stringify(Object.assign({},run,{ch:1,ng:(run.ng||0)+1,cp:'start',elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0}})));}
+    store.set('gunpo-save',JSON.stringify(Object.assign({},run,{ch:1,ng:(run.ng||0)+1,cp:'start',elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0}})));
+    startStory('終',ENDING,()=>{mode='win';winT=0;step=0;},'win');}
 }
 
 // ---------- enemies ----------
@@ -937,7 +983,9 @@ function update(rdt){
   const emb=worldCh===3&&mode!=='title';
   ambient.forEach(a=>{if(emb){a.y-=a.v*2.2*rdt;a.x+=Math.sin(clock*1.3+a.ph)*14*rdt;if(a.y<-6){a.y=H+6;a.x=rnd(0,W);}return;}a.y+=a.v*(storm?5:1)*rdt;a.x+=(Math.sin(clock+a.ph)*8-(storm?90:0))*rdt;a.rot+=rdt;if(a.y>H){a.y=-5;a.x=rnd(0,W+100);}if(a.x<-10)a.x=W+5;});
   if(toastMsg){toastMsg.life-=rdt;if(toastMsg.life<=0)toastMsg=null;}
+  if(mode==='story'){if(story)story.t+=rdt;return;}
   if(mode==='title'||paused||shopOpen)return;
+  if(subtitle){subtitle.life-=rdt;if(subtitle.life<=0)subtitle=null;}
   if(gauntletNext>0){gauntletNext-=rdt;if(gauntletNext<=0&&mode==='play'){run.carry={hp:Math.min(P.maxHp,P.hp+30),gourd:Math.min(P.maxGourd,P.gourd+1),focus:P.focus};run.ch++;resetWorld('rush');return;}}
   if(shopSoon>0){shopSoon-=rdt;if(shopSoon<=0&&mode==='play'){openShop(SHRINES[0]);return;}}
   for(const k in buf)buf[k]=Math.max(0,buf[k]-rdt);
@@ -1599,9 +1647,10 @@ function drawBanner(){
   if(!banner)return;const k=banner.life/banner.d,a=Math.min(1,(1-k)*5,k*4);
   ctx.save();ctx.globalAlpha=a;
   const g=ctx.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,.65)');g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g;ctx.fillRect(0,H*.32,W,110);
+  ctx.fillStyle=g;ctx.fillRect(0,H*.32,W,banner.v?142:110);
   ctx.fillStyle='#e9dfc8';ctx.font='900 46px '+FONT;ctx.textAlign='center';ctx.fillText(banner.t,W/2,H*.32+58);
   ctx.fillStyle='#d9a441';ctx.font='500 17px '+FONT;ctx.fillText(banner.s,W/2,H*.32+90);
+  if(banner.v){ctx.fillStyle='rgba(233,223,200,.78)';ctx.font='500 15px '+FONT;ctx.fillText(banner.v,W/2,H*.32+124);}
   ctx.restore();
 }
 function fmtTime(s){return Math.floor(s/60)+'分'+String(Math.floor(s%60)).padStart(2,'0')+'秒';}
@@ -1617,13 +1666,14 @@ function drawTitle(){
     const lines=['A / D 移動　空白 / W 跳躍　L / Shift 閃避','J 輕棍四段　K 按住蓄力重棍　空中 J 迴旋、K 落棍','I 定身術　O 分身術　R 葫蘆　F 土地祠修習　Esc 暫停'];
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;lines.forEach((l,i)=>ctx.fillText(l,W/2+40,256+i*24));
     const items=mainItems();titleSel=clamp(titleSel,0,items.length-1);
-    items.forEach((it,i)=>{const yy=368+i*44,sel=i===titleSel;
+    items.forEach((it,i)=>{const yy=352+i*42,sel=i===titleSel;
       ctx.fillStyle=sel?'rgba(217,164,65,.16)':'rgba(8,8,10,.4)';ctx.fillRect(W/2+40-180,yy-26,360,38);
       ctx.strokeStyle=sel?'rgba(217,164,65,.8)':'rgba(217,164,65,.25)';ctx.lineWidth=1;ctx.strokeRect(W/2+40-179.5,yy-25.5,359,37);
       ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 18px '+FONT;ctx.fillText(it.label,W/2+40,yy);
       hitRects.push({x:W/2+40-180,y:yy-26,w:360,h:38,act:()=>{titleSel=i;it.act();}});});
     ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 13px '+FONT;
-    ctx.fillText(touchUI?'輕觸選項開始':'W / S 選擇　Enter 確認　支援手把',W/2+40,368+items.length*44+8);
+    ctx.fillText(touchUI?'輕觸選項開始':'W / S 選擇　Enter 確認　支援手把',W/2+40,352+items.length*42+6);
+  }else if(titleSub==='lore'){drawLore();
   }else if(titleSub==='rush'){
     ctx.fillStyle='#efe6d2';ctx.font='900 40px '+FONT;ctx.fillText('Boss 挑戰',W/2,92);
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText('直接單挑一位妖王。使用統一的中段技藝配置，不影響旅程存檔。',W/2,120);
@@ -1677,7 +1727,8 @@ function drawShop(){
   ctx.textAlign='left';ctx.fillStyle='#efe6d2';ctx.font='900 24px '+FONT;ctx.fillText('土地祠 · 修習',px+24,py+40);
   ctx.textAlign='right';essIcon(px+pw-96,py+33,7);ctx.fillStyle='#ffe6a0';ctx.font='900 20px '+FONT;ctx.fillText(run.ess,px+pw-24,py+40);
   ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 12px '+FONT;ctx.fillText('靈蘊',px+pw-108,py+39);
-  const y0=py+60,rh=34;
+  if(shopTalk){ctx.textAlign='left';ctx.fillStyle='rgba(201,191,168,.85)';ctx.font='500 13px '+FONT;ctx.fillText(shopTalk,px+26,py+64);}
+  const y0=py+76,rh=34;
   UPG.forEach((it,i)=>{const y=y0+i*rh,lv=run.up[it.id]||0,maxed=lv>=it.max,c=upgCost(it,lv),sel=i===shopSel;
     if(sel){ctx.fillStyle='rgba(217,164,65,.14)';ctx.fillRect(px+10,y,pw-20,rh-4);ctx.fillStyle='#d9a441';ctx.fillRect(px+10,y,3,rh-4);}
     ctx.textAlign='left';ctx.fillStyle=maxed?'#9a8a6a':'#ffd36b';ctx.font='900 16px '+FONT;ctx.fillText(it.name,px+26,y+21);
@@ -1701,11 +1752,12 @@ function drawOverlay(){
     if(deadT>1.2){ctx.fillStyle='#d9a441';ctx.font='900 18px '+FONT;ctx.fillText((checkpoint==='rush'?'再戰':checkpoint==='shrine'?'自土地祠再戰':'重新出發')+'（Enter／輕觸）',W/2,H/2+64);
       if(run.rush)panelText(touchUI?'返回挑戰選單':'Esc 返回挑戰選單',H/2+110,'#c9bfa8',14,backToRush);}ctx.globalAlpha=1;}
   if(mode==='clear'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
-    ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText(CH[clearedCh].name+' 終',W/2,H/2-92);
-    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-30);
-    ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;ctx.fillText(`目前用時 ${fmtTime(run.elapsed)}　身上靈蘊 ${run.ess}`,W/2,H/2+14);
-    ctx.fillStyle='#c9bfa8';ctx.font='500 15px '+FONT;ctx.fillText('進度已存。下一回開始時可先於土地祠修習。',W/2,H/2+44);
-    if(winT>2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('進入'+CH[clearedCh+1].name+' · '+CH[clearedCh+1].place+'（Enter／輕觸）',W/2,H/2+90);}ctx.globalAlpha=1;}
+    ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText(CH[clearedCh].name+' 終',W/2,H/2-112);
+    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-52);
+    ctx.fillStyle='#efe6d2';ctx.font='500 17px '+FONT;ctx.fillText(CH[clearedCh].epi,W/2,H/2-6);
+    ctx.fillStyle='#c9bfa8';ctx.font='500 16px '+FONT;ctx.fillText(`目前用時 ${fmtTime(run.elapsed)}　身上靈蘊 ${run.ess}`,W/2,H/2+32);
+    ctx.font='500 14px '+FONT;ctx.fillText('進度已存。下一回開始時可先於土地祠修習。',W/2,H/2+58);
+    if(winT>2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('進入'+CH[clearedCh+1].name+' · '+CH[clearedCh+1].place+'（Enter／輕觸）',W/2,H/2+102);}ctx.globalAlpha=1;}
   if(mode==='win'&&run.rush){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('挑戰成功 · '+DIFF[run.diff].name,W/2,H/2-96);
     ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(run.gauntlet?'三王伏誅':CH[run.ch].clear,W/2,H/2-36);
@@ -1732,12 +1784,99 @@ function drawOverlay(){
     panelText('回到標題（進度停在上次存檔）',512,'#c9bfa8',13,()=>{paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
 }
 
+// ---------- story & bestiary ----------
+function startStory(title,lines,next,music){story={title,lines,next,t:0,all:false,dur:1e9,music:music||'calm'};mode='story';paused=false;step=0;clearBuf();for(const k in held)held[k]=false;}
+function storyFinish(){const n=story&&story.next;story=null;if(n)n();}
+function storyInput(k){
+  if(!story)return;
+  if(k==='pause'||k==='dodge'){storyFinish();return;}
+  if(k==='start'||k==='attack'||k==='jump'||k==='interact'||k==='up'){if(!story.all&&story.t<story.dur)story.all=true;else storyFinish();}
+}
+function drawStory(){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0c0a09');g.addColorStop(1,'#19140f');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(233,223,200,.045)';ctx.beginPath();ctx.arc(168,150,96,0,Math.PI*2);ctx.fill();
+  drawLayers(clock*8,[{f:1,seed:3.3,amp:120,base:505,col:'#1f1a15',a:.9}],'rgba(0,0,0,0)');
+  const L=story.lines,size=23,cell=size*1.22,gap=56,x0=W/2+(L.length-1)*gap/2,y0=86;
+  ctx.textAlign='center';
+  ctx.fillStyle='#a8322a';ctx.fillRect(x0+gap-20,y0-4,40,40);ctx.fillStyle='#f3e9d6';ctx.font='900 24px '+FONT;ctx.fillText(story.title,x0+gap,y0+25);
+  ctx.font='900 '+size+'px '+FONT;let tt=.5;
+  L.forEach((line,i)=>{const x=x0-i*gap;let j=0,hl=false;
+    for(const c of line){
+      if(c==='【'){hl=true;continue;}if(c==='】'){hl=false;continue;}
+      if('，。：、'.includes(c)){j+=.55;tt+=.2;continue;}
+      const a=story.all?1:clamp((story.t-tt)/.35,0,1);
+      if(a>0){const y=y0+j*cell+size-(1-a)*8;ctx.globalAlpha=a;
+        if(hl){ctx.fillStyle='#a8322a';ctx.fillRect(x-size*.64,y-size*.98,size*1.28,cell+.5);ctx.fillStyle='#f3e9d6';}else ctx.fillStyle='#e9dfc8';
+        ctx.fillText(c,x,y);}
+      j++;tt+=hl?.18:.075;}
+    tt+=.42;});
+  ctx.globalAlpha=1;story.dur=tt;
+  const done=story.all||story.t>tt;
+  if(done){ctx.globalAlpha=.55+Math.sin(clock*3)*.45;ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText(touchUI?'輕觸繼續':'按 Enter 繼續',W/2,H-30);ctx.globalAlpha=1;}
+  else{ctx.fillStyle='rgba(201,191,168,.55)';ctx.font='500 14px '+FONT;ctx.fillText(touchUI?'輕觸顯示全文':'Enter 顯示全文　Esc 略過',W/2,H-30);}
+  ctx.textAlign='right';ctx.fillStyle='rgba(201,191,168,.75)';ctx.font='900 15px '+FONT;ctx.fillText('略過 ›',W-36,52);
+  hitRects.push({x:W-130,y:26,w:110,h:38,act:storyFinish});
+}
+function wrapText(text,x,y,maxW,lh){
+  let line='';
+  for(const ch of text){
+    const test=line+ch;
+    if(line&&ctx.measureText(test).width>maxW&&!'，。、：；！？」』）…'.includes(ch)){ctx.fillText(line,x,y);y+=lh;line=ch;}
+    else line=test;
+  }
+  if(line){ctx.fillText(line,x,y);y+=lh;}
+  return y;
+}
+const LORE_H={player:155,wolf:62,shield:200,archer:135,bat:46,brute:205,imp:70,boss:225,crane:205,golem:268};
+const LORE_OX={player:12,boss:-58,golem:-34};
+function fakeEnemy(type){
+  const st={shield:'guard',archer:'move',bat:'hover',brute:'walk',imp:'chase'}[type]||'idle';
+  return{type,x:0,y:type==='bat'?GROUND-70:GROUND,face:1,state:st,t:0,anim:clock,alpha:1,flash:0,guardFlash:0,frozen:0,hp:1,maxHp:1,dead:false,
+    vx:0,phase:1,wind:.5,spd:1,hasBlade:true,combo:0,rolling:false,dashStarted:false,landed:false,thrown:false,poise:100,downed:false};
+}
+function loreDraw(id,cx,by,th){
+  const s=Math.min(2,th/LORE_H[id]);
+  ctx.save();ctx.translate(cx,by);
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(0,3,Math.min(90,LORE_H[id]*s*.32),8,0,0,Math.PI*2);ctx.fill();
+  ctx.scale(s,s);ctx.translate(LORE_OX[id]||0,-GROUND);
+  if(id==='player'){drawStaff(0,GROUND,1,-1.25+Math.sin(clock*2)*.04,.35,0);drawMonkey(0,GROUND,1,'idle',clock,1,false);}
+  else DRAWERS[id](fakeEnemy(id));
+  ctx.restore();
+}
+function drawLore(){
+  ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 34px '+FONT;ctx.fillText('百妖錄',W/2,64);
+  ctx.fillStyle='#c9bfa8';ctx.font='500 13px '+FONT;ctx.fillText('已錄 '+loreCount()+' / '+LORE.length+'　擊敗妖怪即可收錄',W/2,90);
+  LORE.forEach((l,i)=>{const y=114+i*37,sel=i===loreSel,has=loreHas(l.id);
+    if(sel){ctx.fillStyle='rgba(217,164,65,.16)';ctx.fillRect(40,y,232,32);ctx.fillStyle='#d9a441';ctx.fillRect(40,y,3,32);}
+    ctx.textAlign='left';ctx.fillStyle=has?(sel?'#ffe6a0':'#e9dfc8'):'rgba(201,191,168,.4)';ctx.font=(sel?'900':'500')+' 16px '+FONT;ctx.fillText(has?l.name:'？？？',58,y+22);
+    if(l.where){ctx.textAlign='right';ctx.fillStyle='rgba(201,191,168,.5)';ctx.font='500 11px '+FONT;ctx.fillText(CH[l.where].name,262,y+21);}
+    hitRects.push({x:40,y,w:232,h:32,act:()=>{loreSel=i;}});});
+  const px=292,py=112,pw=628,ph=372,L=LORE[loreSel],has=loreHas(L.id);
+  ctx.fillStyle='rgba(20,17,14,.92)';ctx.fillRect(px,py,pw,ph);ctx.strokeStyle='rgba(217,164,65,.4)';ctx.lineWidth=1;ctx.strokeRect(px+.5,py+.5,pw-1,ph-1);
+  const gl=ctx.createRadialGradient(px+160,py+230,10,px+160,py+230,180);gl.addColorStop(0,'rgba(217,164,65,.12)');gl.addColorStop(1,'rgba(217,164,65,0)');ctx.fillStyle=gl;ctx.fillRect(px+1,py+1,320,ph-50);
+  if(has)loreDraw(L.id,px+160,py+300,215);
+  else{ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.22)';ctx.font='900 120px '+FONT;ctx.fillText('？',px+160,py+250);}
+  const tx=px+330,tw=pw-330-26;ctx.textAlign='left';
+  ctx.fillStyle=has?'#efe6d2':'rgba(201,191,168,.5)';ctx.font='900 30px '+FONT;ctx.fillText(has?L.name:'？？？',tx,py+56);
+  ctx.fillStyle='#d9a441';ctx.font='500 14px '+FONT;ctx.fillText(has?L.title:'尚未遭遇',tx,py+82);
+  if(has){
+    ctx.strokeStyle='rgba(217,164,65,.3)';ctx.beginPath();ctx.moveTo(tx,py+98);ctx.lineTo(tx+tw,py+98);ctx.stroke();
+    ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;L.poem.forEach((s2,i)=>ctx.fillText(s2,tx,py+130+i*28));
+    ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;wrapText(L.lore,tx,py+254,tw,22);
+    ctx.fillStyle='rgba(255,214,140,.92)';ctx.font='500 13px '+FONT;wrapText('應對　'+L.tip,px+22,py+ph-22,pw-44,19);
+  }else if(L.where){ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText('出沒於：'+CH[L.where].name+' '+CH[L.where].place,tx,py+130);}
+  ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;
+  ctx.fillText(touchUI?'輕觸左側名錄翻閱':'W / S 翻閱　Esc 返回',W/2,516);
+  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
+}
+
 // ---------- render ----------
 function render(){
   hitRects=[];
   ctx.setTransform(scale*dpr,0,0,scale*dpr,0,0);
   ctx.clearRect(0,0,W,H);
-  if(mode==='title'){drawTitle();drawAmbient(false);if(toastMsg)panelText(toastMsg.text,40,'#e9dfc8',14);return;}
+  if(mode==='title'){drawTitle();if(titleSub!=='lore')drawAmbient(false);if(toastMsg)panelText(toastMsg.text,26,'#e9dfc8',14);return;}
+  if(mode==='story'){drawStory();if(toastMsg)panelText(toastMsg.text,40,'#e9dfc8',14);return;}
   const p2=boss&&boss.phase===2&&!boss.dead;
   const sx=shakeOn?(Math.random()-.5)*shake:0,sy=shakeOn?(Math.random()-.5)*shake:0;
   ctx.save();ctx.translate(sx,sy);
@@ -1772,6 +1911,7 @@ function render(){
   const sh=!shopOpen&&!paused&&nearShrine();
   if(sh)panelText(touchUI?'輕觸此處：歇息 · 修習':'按 F 歇息 · 修習',H-70,'#ffe6a0',15,()=>openShop(sh));
   if(!bossStarted&&mode==='play'&&P.x<300&&P.x>150&&run.elapsed<8&&!sh){ctx.textAlign='center';ctx.fillStyle='rgba(233,223,200,.7)';ctx.font='500 15px '+FONT;ctx.fillText('向右前行 →',W/2,H-30);}
+  if(subtitle){ctx.globalAlpha=clamp(Math.min(subtitle.life*1.5,(4.2-subtitle.life)*3),0,1);panelText(subtitle.text,H-86,'#efe6d2',16);ctx.globalAlpha=1;}
   if(fadeIn>0){ctx.fillStyle=`rgba(0,0,0,${fadeIn})`;ctx.fillRect(0,0,W,H);}
   if(shopOpen)drawShop();
   drawOverlay();
@@ -1799,7 +1939,7 @@ function loop(now){
 (document.fonts&&document.fonts.load?Promise.all([document.fonts.load('900 20px "Noto Serif TC"'),document.fonts.load('500 20px "Noto Serif TC"')]).catch(()=>{}):Promise.resolve())
   .finally(()=>requestAnimationFrame(loop));
 window.__game={get mode(){return mode},get P(){return P},get enemies(){return enemies},get boss(){return boss},get proj(){return proj},get run(){return run},
-  get shopOpen(){return shopOpen},get titleSub(){return titleSub},get worldCh(){return worldCh},get deadT(){return deadT},get bossStarted(){return bossStarted},get arena(){return arena},get paused(){return paused},
+  get shopOpen(){return shopOpen},get titleSub(){return titleSub},get worldCh(){return worldCh},get story(){return story},get subtitle(){return subtitle},get banner(){return banner},get deadT(){return deadT},get bossStarted(){return bossStarted},get arena(){return arena},get paused(){return paused},
   press,release,startBoss,buy,newRun,closeShop,openShop:(i)=>openShop(SHRINES[i||0]),step:(dt)=>update(dt),halt:()=>{halted=true;},UPG,SHRINE_X,BOSS_TRIGGER,GROUND};
 })();
 </script>
