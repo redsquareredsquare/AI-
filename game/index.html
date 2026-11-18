@@ -188,7 +188,9 @@ const ATK=[
 ];
 const GUARD={idle:1,guard:1,wind:1};
 function loadSave(){try{const s=JSON.parse(store.get('gunpo-save')||'null');return s&&s.ch&&s.up?s:null;}catch(e){return null;}}
-function saveRun(cp){if(!run)return;run.cp=cp;store.set('gunpo-save',JSON.stringify(run));}
+function saveRun(cp){if(!run||run.rush)return;run.cp=cp;store.set('gunpo-save',JSON.stringify(run));}
+const rushBest=(c,d)=>parseFloat(store.get('gunpo-rush-'+c+'-'+d))||null;
+let rushSel=0,rushRecord=false;
 const getBest=d=>parseFloat(store.get('gunpo-best-'+d))||null;
 saveCache=loadSave();
 const aggr=()=>1/DIFF[run.diff].cd;
@@ -205,6 +207,7 @@ function press(k){
   if(k==='shake'){shakeOn=!shakeOn;store.set('gunpo-shake',shakeOn?'1':'0');toast('畫面震動：'+(shakeOn?'開':'關'));return;}
   if(mode==='title'){menuInput(k);return;}
   if(shopOpen){shopInput(k);return;}
+  if(run&&run.rush&&(mode==='win'||mode==='dead')&&(k==='pause'||k==='dodge'||k==='heal')){backToRush();return;}
   if(k==='pause'){togglePause();return;}
   if(paused){if(k==='start'||k==='attack')paused=false;return;}
   if(!held[k])buf[k]=.2;held[k]=true;
@@ -250,20 +253,33 @@ function pollPad(){
 
 // ---------- menus ----------
 function mainItems(){
-  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}}]
-    :[{label:'開始旅程',act:()=>{titleSub='diff';}}];
+  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}}]
+    :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}}];
 }
 function menuInput(k){
   if(titleSub==='main'){const items=mainItems();titleSel=clamp(titleSel,0,items.length-1);
     if(k==='up'||k==='jump'||k==='left')titleSel=(titleSel+items.length-1)%items.length;
     else if(k==='down'||k==='right')titleSel=(titleSel+1)%items.length;
     else if(k==='start'||k==='attack'||k==='pause')items[titleSel].act();}
+  else if(titleSub==='rush'){
+    if(k==='left')rushSel=(rushSel+2)%3;
+    else if(k==='right')rushSel=(rushSel+1)%3;
+    else if(k==='up'||k==='jump')diffSel=(diffSel+2)%3;
+    else if(k==='down')diffSel=(diffSel+1)%3;
+    else if(k==='start'||k==='attack')startChallenge(rushSel+1);
+    else if(k==='dodge'||k==='pause'||k==='heal')titleSub='main';}
   else{
     if(k==='left'||k==='up')diffSel=(diffSel+2)%3;
     else if(k==='right'||k==='down')diffSel=(diffSel+1)%3;
     else if(k==='start'||k==='attack')newRun(diffSel);
     else if(k==='dodge'||k==='pause'||k==='heal')titleSub='main';}
 }
+function startChallenge(c){
+  store.set('gunpo-diff',String(diffSel));
+  run={diff:diffSel,ch:c,ng:0,up:{hp:2,st:1,atk:1,gourd:1,spell:1,parry:1,quake:1},ess:0,elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0},cp:'rush',rush:true};
+  hintsSeen={shrine:1,air:1,clone:1,focus:1};startPlay('rush');
+}
+function backToRush(){paused=false;mode='title';titleSub='rush';saveCache=loadSave();clearBuf();}
 function newRun(d){
   store.set('gunpo-diff',String(d));
   run={diff:d,ch:1,ng:0,up:{},ess:0,elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0},cp:'start'};
@@ -323,6 +339,7 @@ function resetWorld(cp){
   proj=[];parts=[];texts=[];decals=[];clones=[];banner=null;hitstop=0;timeScale=1;slowT=0;shake=0;zoom=1;zoomT=1;zoomTimer=0;zoomFocus=null;
   arena=null;bossStarted=false;boss=null;hintMsg=null;hintQueue=[];worldCh=run.ch;
   applyStats();
+  if(cp==='rush'){P=newPlayer(ARENA.l+200);enemies=[];shrineLit=true;run.elapsed=0;camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;startBoss();return;}
   if(cp==='shrine'){P=newPlayer(SHRINE_X+30);enemies=[];shrineLit=true;}
   else{P=newPlayer(150);shrineLit=false;enemies=spawnChapter(run.ch);showBanner(CH[run.ch].name,CH[run.ch].place,2.6);}
   camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;
@@ -336,6 +353,7 @@ function startBoss(){
 function startOrRetry(){
   if(mode==='dead'&&deadT>1.2)startPlay(checkpoint);
   else if(mode==='clear'&&winT>2){startPlay('start');shopSoon=1.3;}
+  else if(mode==='win'&&winT>1.2&&run.rush)startPlay('rush');
   else if(mode==='win'&&winT>2){mode='title';titleSub='main';titleSel=0;saveCache=loadSave();clock=0;}
   else return;
   clearBuf();
@@ -515,6 +533,8 @@ function killEnemy(e){
   e.dead=true;e.state='dead';e.t=0;burst(e.x,e.y-30,26,'#3c3f44',200,.9,400);inkSplat(e.x,7);P.focus=Math.min(3,P.focus+.3*ST.focus);gainEss(e);
 }
 function bossDefeated(e){
+  if(run.rush){mode='win';winT=0;step=0;const b=rushBest(run.ch,run.diff);rushRecord=!b||run.elapsed<b;
+    if(rushRecord)store.set('gunpo-rush-'+run.ch+'-'+run.diff,String(run.elapsed));return;}
   gainEss(e);
   if(worldCh<3){mode='clear';winT=0;step=0;clearedCh=worldCh;run.ch=worldCh+1;saveRun('start');}
   else{mode='win';winT=0;step=0;newRecord=false;const b=getBest(run.diff);
@@ -1542,7 +1562,7 @@ function essIcon(x,y,s){ctx.fillStyle='#ffd36b';ctx.beginPath();ctx.moveTo(x,y-s
 function drawHUD(){
   const x=28,y=30;
   ctx.fillStyle='#e9dfc8';ctx.font='900 15px '+FONT;ctx.textAlign='left';ctx.fillText('石猿',x,y-6);
-  ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 11px '+FONT;ctx.fillText(CH[worldCh].name+' · '+DIFF[run.diff].name+(run.ng?' · '+(run.ng+1)+'周目':''),x+42,y-7);
+  ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 11px '+FONT;ctx.fillText((run.rush?'Boss 挑戰':CH[worldCh].name)+' · '+DIFF[run.diff].name+(run.ng?' · '+(run.ng+1)+'周目':''),x+42,y-7);
   bar(x,y,Math.min(360,240*P.maxHp/120),9,P.hp/P.maxHp,'#d8d0bc','#3a1210');
   bar(x,y+15,Math.min(290,190*P.maxSt/100),5,P.st/P.maxSt,P.exhaust?(Math.floor(clock*6)%2?'#b8322a':'#7a2a20'):'#d9a441');
   for(let i=0;i<3;i++){const f=clamp(P.focus-i,0,1),cx=x+10+i*24,cy=y+38;
@@ -1596,6 +1616,29 @@ function drawTitle(){
       hitRects.push({x:W/2+40-180,y:yy-26,w:360,h:38,act:()=>{titleSel=i;it.act();}});});
     ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 13px '+FONT;
     ctx.fillText(touchUI?'輕觸選項開始':'W / S 選擇　Enter 確認　支援手把',W/2+40,368+items.length*44+8);
+  }else if(titleSub==='rush'){
+    ctx.fillStyle='#efe6d2';ctx.font='900 40px '+FONT;ctx.fillText('Boss 挑戰',W/2,92);
+    ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText('直接單挑一位妖王。使用統一的中段技藝配置，不影響旅程存檔。',W/2,120);
+    const tint=['rgba(200,90,40,','rgba(90,150,200,','rgba(230,80,30,'];
+    [1,2,3].forEach((c,i)=>{const cw=240,chh=210,cx=W/2-375+i*262,cy=146,sel=i===rushSel,lift=sel?-6:0;
+      const g=ctx.createLinearGradient(0,cy,0,cy+chh);g.addColorStop(0,tint[i]+(sel?'.30)':'.14)'));g.addColorStop(1,'rgba(8,8,10,.6)');
+      ctx.fillStyle=g;ctx.fillRect(cx,cy+lift,cw,chh);
+      ctx.strokeStyle=sel?'#d9a441':'rgba(217,164,65,.28)';ctx.lineWidth=sel?2:1;ctx.strokeRect(cx+.5,cy+lift+.5,cw-1,chh-1);
+      ctx.fillStyle='rgba(201,191,168,.8)';ctx.font='500 13px '+FONT;ctx.fillText(CH[c].name+' · '+CH[c].place,cx+cw/2,cy+lift+32);
+      ctx.fillStyle=sel?'#ffe6a0':'#e9dfc8';ctx.font='900 32px '+FONT;ctx.fillText(CH[c].boss,cx+cw/2,cy+lift+80);
+      ctx.fillStyle='#c9bfa8';ctx.font='500 13px '+FONT;ctx.fillText(CH[c].bossSub,cx+cw/2,cy+lift+108);
+      const b=rushBest(c,diffSel);ctx.fillStyle=b?'#d9a441':'rgba(201,191,168,.45)';ctx.font='500 14px '+FONT;
+      ctx.fillText(b?DIFF[diffSel].name+'最佳 '+fmtTime(b):DIFF[diffSel].name+'：尚未擊敗',cx+cw/2,cy+lift+156);
+      const done=[0,1,2].filter(d=>rushBest(c,d)).map(d=>DIFF[d].name);
+      ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 12px '+FONT;ctx.fillText(done.length?'已擊敗：'+done.join('、'):'　',cx+cw/2,cy+lift+182);
+      hitRects.push({x:cx,y:cy,w:cw,h:chh,act:()=>{if(rushSel===i)startChallenge(c);else rushSel=i;}});});
+    DIFF.forEach((d,i)=>{const w=96,x=W/2-150+i*104-w/2+48,y=378,sel=i===diffSel;
+      ctx.fillStyle=sel?'rgba(217,164,65,.2)':'rgba(8,8,10,.5)';ctx.fillRect(x,y,w,34);ctx.strokeStyle=sel?'#d9a441':'rgba(217,164,65,.3)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,33);
+      ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 16px '+FONT;ctx.fillText(d.name,x+w/2,y+23);
+      hitRects.push({x,y,w,h:34,act:()=>{diffSel=i;}});});
+    ctx.fillStyle='rgba(201,191,168,.75)';ctx.font='500 14px '+FONT;
+    ctx.fillText(touchUI?'輕觸選擇妖王，再輕觸一次開戰':'A / D 選妖王　W / S 難度　Enter 開戰　Esc 返回',W/2,446);
+    ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
   }else{
     ctx.fillStyle='#efe6d2';ctx.font='900 40px '+FONT;ctx.fillText('擇道',W/2,96);
     ctx.fillStyle='#c9bfa8';ctx.font='500 15px '+FONT;ctx.fillText('選擇難度，旅途中無法更改',W/2,126);
@@ -1640,15 +1683,24 @@ function drawShop(){
 function drawOverlay(){
   if(mode==='dead'&&deadT>.6){const a=Math.min(1,(deadT-.6)*1.5);ctx.fillStyle=`rgba(20,4,4,${.6*a})`;ctx.fillRect(0,0,W,H);
     ctx.globalAlpha=a;ctx.textAlign='center';ctx.fillStyle='#b8322a';ctx.font='900 64px '+FONT;ctx.fillText('敗',W/2,H/2-20);
-    ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;ctx.fillText('勝敗乃兵家常事。靈蘊仍在身上。',W/2,H/2+22);
-    if(deadT>1.2){ctx.fillStyle='#d9a441';ctx.font='900 18px '+FONT;ctx.fillText((checkpoint==='shrine'?'自土地祠再戰':'重新出發')+'（Enter／輕觸）',W/2,H/2+64);}ctx.globalAlpha=1;}
+    ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;ctx.fillText(run.rush?'勝敗乃兵家常事。':'勝敗乃兵家常事。靈蘊仍在身上。',W/2,H/2+22);
+    if(deadT>1.2){ctx.fillStyle='#d9a441';ctx.font='900 18px '+FONT;ctx.fillText((checkpoint==='rush'?'再戰':checkpoint==='shrine'?'自土地祠再戰':'重新出發')+'（Enter／輕觸）',W/2,H/2+64);
+      if(run.rush)panelText(touchUI?'返回挑戰選單':'Esc 返回挑戰選單',H/2+110,'#c9bfa8',14,backToRush);}ctx.globalAlpha=1;}
   if(mode==='clear'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText(CH[clearedCh].name+' 終',W/2,H/2-92);
     ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-30);
     ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;ctx.fillText(`目前用時 ${fmtTime(run.elapsed)}　身上靈蘊 ${run.ess}`,W/2,H/2+14);
     ctx.fillStyle='#c9bfa8';ctx.font='500 15px '+FONT;ctx.fillText('進度已存。下一回開始時可先於土地祠修習。',W/2,H/2+44);
     if(winT>2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('進入'+CH[clearedCh+1].name+' · '+CH[clearedCh+1].place+'（Enter／輕觸）',W/2,H/2+90);}ctx.globalAlpha=1;}
-  if(mode==='win'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
+  if(mode==='win'&&run.rush){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
+    ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('挑戰成功 · '+DIFF[run.diff].name,W/2,H/2-96);
+    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[run.ch].clear,W/2,H/2-36);
+    ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;const st=run.stats;
+    ctx.fillText(`用時 ${fmtTime(run.elapsed)}　命中 ${st.hits}　識破 ${st.perfect}　反擊 ${st.counters}　倒下 ${st.deaths}`,W/2,H/2+8);
+    ctx.fillStyle=rushRecord?'#ffd36b':'#c9bfa8';ctx.fillText(rushRecord?'新紀錄！':'最佳紀錄 '+fmtTime(rushBest(run.ch,run.diff)),W/2,H/2+40);
+    if(winT>1.2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('再戰一次（Enter／輕觸）',W/2,H/2+90);
+      panelText(touchUI?'返回挑戰選單':'Esc 返回挑戰選單',H/2+136,'#c9bfa8',14,backToRush);}ctx.globalAlpha=1;}
+  else if(mode==='win'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('全劇終',W/2,H/2-96);
     ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[3].clear,W/2,H/2-36);
     ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;const st=run.stats;
