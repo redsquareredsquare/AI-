@@ -177,6 +177,8 @@ let run=null,ST={},shopOpen=false,shopSel=0,shopSoon=0,paused=false,worldCh=1,cl
 let P=null,enemies=[],proj=[],parts=[],texts=[],decals=[],clones=[];
 let camX=0,shake=0,hitstop=0,timeScale=1,slowT=0,zoom=1,zoomT=1,zoomTimer=0,zoomFocus=null;
 let arena=null,bossStarted=false,banner=null,boss=null,deadT=0,winT=0,checkpoint='start',fadeIn=0,clock=0,shrineLit=false;
+let shakeOn=store.get('gunpo-shake')!=='0';
+function rumble(a,d){try{const gp=[...navigator.getGamepads()].find(g=>g);const ac=gp&&gp.vibrationActuator;if(ac&&ac.playEffect)ac.playEffect('dual-rumble',{duration:d,strongMagnitude:a,weakMagnitude:a});}catch(e){}}
 let hintMsg=null,hintQueue=[],hintsSeen={},toastMsg=null,newRecord=false,hitRects=[];
 const ATK=[
   {dur:.34,hs:.09,he:.19,dmg:9,lunge:140,st:8,reach:108,a0:-1.0,a1:.55},
@@ -195,11 +197,12 @@ const aggr=()=>1/DIFF[run.diff].cd;
 const held={},buf={};
 const KEYMAP={KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',KeyW:'up',ArrowUp:'up',Space:'jump',KeyS:'down',ArrowDown:'down',
   KeyJ:'attack',KeyK:'heavy',KeyL:'dodge',ShiftLeft:'dodge',ShiftRight:'dodge',KeyI:'spell',KeyO:'clone',KeyU:'clone',KeyR:'heal',KeyE:'heal',
-  KeyF:'interact',Enter:'start',Escape:'pause',KeyP:'pause',KeyM:'mute'};
+  KeyF:'interact',Enter:'start',Escape:'pause',KeyP:'pause',KeyM:'mute',KeyV:'shake'};
 function clearBuf(){for(const k in buf)buf[k]=0;}
 function press(k){
   audioInit();
   if(k==='mute'){toggleMute();return;}
+  if(k==='shake'){shakeOn=!shakeOn;store.set('gunpo-shake',shakeOn?'1':'0');toast('畫面震動：'+(shakeOn?'開':'關'));return;}
   if(mode==='title'){menuInput(k);return;}
   if(shopOpen){shopInput(k);return;}
   if(k==='pause'){togglePause();return;}
@@ -325,7 +328,7 @@ function resetWorld(cp){
   camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;
 }
 function startBoss(){
-  bossStarted=true;arena=ARENA;
+  bossStarted=true;arena=ARENA;hintMsg=null;hintQueue=[];
   enemies.forEach(e=>{if(!e.dead&&e.x<arena.l+40){burst(e.x,e.y-30,20,'#3c3f44',160,.8);e.dead=true;e.t=0;}});
   boss=worldCh===1?makeBoss(3300):worldCh===2?makeCrane(3300):makeGolem(3300);enemies.push(boss);
   showBanner(CH[worldCh].boss,CH[worldCh].bossSub,3);if(worldCh===2)sfx.screech();else sfx.roar();shake=10;kickZoom(1.12,1.6,{x:boss.x,y:GROUND-110});
@@ -484,7 +487,7 @@ function damageEnemy(e,hb,mult,ox,main){
   e.hp-=dmg;e.flash=.12;run.stats.hits++;
   if(!hb.heavy)P.focus=Math.min(3,P.focus+.13*mult*ST.focus);
   if(hb.counter&&main)P.focus=Math.min(3,P.focus+.4*ST.focus);
-  if(main){hitstop=hb.heavy?.13:.055;shake=Math.max(shake,hb.heavy?9:3);if(hb.heavy)sfx.heavy();else sfx.hit();}else sfx.hit();
+  if(main){hitstop=hb.heavy?.13:.055;shake=Math.max(shake,hb.heavy?9:3);if(hb.heavy){sfx.heavy();rumble(.5,110);}else sfx.hit();}else sfx.hit();
   if(hb.heavy&&e.frozen>0&&!(e.type==='crane'&&e.y<GROUND))e.frozen=0;
   const bx=enemyBox(e);
   addText(e.x+rnd(-15,15),bx.y-8,dmg,hb.heavy?'#ffd36b':main?'#efe6d2':'#e8c46a',hb.heavy?30:main?20:16);
@@ -857,7 +860,7 @@ function hurtPlayer(dmg,fromX){
     return false;
   }
   dmg=Math.max(1,Math.round(dmg*DIFF[run.diff].dmg*(1+.25*(run.ng||0))));
-  P.hp-=dmg;P.inv=.7;sfx.hurt();shake=Math.max(shake,7);hitstop=.07;
+  P.hp-=dmg;P.inv=.7;sfx.hurt();rumble(.7,160);shake=Math.max(shake,7);hitstop=.07;
   addText(P.x,P.y-110,'-'+dmg,'#e0614f',22);burst(P.x,P.y-50,14,'#b8322a',180,.5,300);
   if(P.hp<=0){P.hp=0;setP('dead');P.vx=(P.x<fromX?-1:1)*200;mode='dead';deadT=0;run.stats.deaths++;step=0;endClones();inkSplat(P.x,6,'60,10,8');return true;}
   if(P.state!=='heavy'||P.t>.2){setP('hurt');P.vx=(P.x<fromX?-1:1)*260;}
@@ -912,7 +915,7 @@ function update(rdt){
   for(const k in buf)buf[k]=Math.max(0,buf[k]-rdt);
   if(slowT>0){slowT-=rdt;if(slowT<=0)timeScale=1;}
   if(banner){banner.life-=rdt;if(banner.life<=0)banner=null;}
-  if(hintMsg){hintMsg.life-=rdt;if(hintMsg.life<=0)hintMsg=null;}else if(hintQueue.length&&!banner)hintMsg={text:hintQueue.shift(),life:5};
+  if(hintMsg){hintMsg.life-=rdt;if(hintMsg.life<=0)hintMsg=null;}else if(hintQueue.length&&!banner&&!bossStarted)hintMsg={text:hintQueue.shift(),life:5};
   fadeIn=Math.max(0,fadeIn-rdt*1.5);
   zoomTimer-=rdt;if(zoomTimer<=0)zoomT=1;zoom+=(zoomT-zoom)*Math.min(1,rdt*7);if(zoomTimer<=0&&Math.abs(zoom-1)<.003){zoom=1;zoomFocus=null;}
   if(mode==='dead')deadT+=rdt;
@@ -1657,9 +1660,9 @@ function drawOverlay(){
     ctx.fillStyle='#efe6d2';ctx.font='900 44px '+FONT;ctx.fillText('暫停',W/2,92);
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText(CH[worldCh].name+' '+CH[worldCh].place+' · '+DIFF[run.diff].name+' · 用時 '+fmtTime(run.elapsed),W/2,120);
     const rows=[['移動','A / D'],['跳躍','空白 / W'],['輕棍（四段）','J'],['蓄力重棍','按住 K'],['空中迴旋／落棍','空中 J／K'],['閃避','L / Shift'],
-      ['識破後反擊','閃避瞬間躲過攻擊，再按 J'],['定身術／分身術','I／O'],['葫蘆','R'],['土地祠修習','靠近後按 F'],['聲音開關','M（目前：'+(muted?'關':'開')+'）']];
+      ['識破後反擊','閃避瞬間躲過攻擊，再按 J'],['定身術／分身術','I／O'],['葫蘆','R'],['土地祠修習','靠近後按 F'],['聲音開關','M（目前：'+(muted?'關':'開')+'）'],['畫面震動','V（目前：'+(shakeOn?'開':'關')+'）']];
     ctx.font='500 16px '+FONT;rows.forEach((r,i)=>{ctx.textAlign='right';ctx.fillStyle='#d9a441';ctx.fillText(r[0],W/2-16,160+i*26);ctx.textAlign='left';ctx.fillStyle='#c9bfa8';ctx.fillText(r[1],W/2+16,160+i*26);});
-    ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,470);
+    ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,484);
     panelText('回到標題（進度停在上次存檔）',512,'#c9bfa8',13,()=>{paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
 }
 
@@ -1670,7 +1673,7 @@ function render(){
   ctx.clearRect(0,0,W,H);
   if(mode==='title'){drawTitle();drawAmbient(false);if(toastMsg)panelText(toastMsg.text,40,'#e9dfc8',14);return;}
   const p2=boss&&boss.phase===2&&!boss.dead;
-  const sx=(Math.random()-.5)*shake,sy=(Math.random()-.5)*shake;
+  const sx=shakeOn?(Math.random()-.5)*shake:0,sy=shakeOn?(Math.random()-.5)*shake:0;
   ctx.save();ctx.translate(sx,sy);
   if(zoom!==1){const f=zoomFocus||{x:P.x,y:P.y-60},fx=clamp(f.x-camX,120,W-120),fy=f.y;ctx.translate(fx,fy);ctx.scale(zoom,zoom);ctx.translate(-fx,-fy);}
   drawBackdrop(camX,p2);drawGround(camX);
