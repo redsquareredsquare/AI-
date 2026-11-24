@@ -27,10 +27,10 @@ canvas{display:block;background:var(--ink)}
 .grp.l{left:max(16px,env(safe-area-inset-left,0px));display:flex;gap:10px}
 .grp.r{right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .skills{display:flex;gap:8px}
-.main{display:grid;grid-template-columns:repeat(2,62px);gap:8px}
-.b{width:62px;height:62px;border-radius:50%;border:1.5px solid rgba(217,164,65,.55);background:rgba(10,10,12,.45);color:var(--paper);font:900 19px var(--display);display:flex;align-items:center;justify-content:center;touch-action:none}
-.b.sm{width:46px;height:46px;font-size:15px}
-.b.big{width:72px;height:72px;font-size:22px}
+.main{display:grid;grid-template-columns:repeat(2,calc(62px*var(--ps,1)));gap:8px}
+.b{width:calc(62px*var(--ps,1));height:calc(62px*var(--ps,1));border-radius:50%;border:1.5px solid rgba(217,164,65,.55);background:rgba(10,10,12,.45);color:var(--paper);font:900 calc(19px*var(--ps,1)) var(--display);display:flex;align-items:center;justify-content:center;touch-action:none}
+.b.sm{width:calc(46px*var(--ps,1));height:calc(46px*var(--ps,1));font-size:calc(15px*var(--ps,1))}
+.b.big{width:calc(72px*var(--ps,1));height:calc(72px*var(--ps,1));font-size:calc(22px*var(--ps,1))}
 .b:active,.b.down{background:rgba(217,164,65,.35)}
 #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));pointer-events:auto}
 #rot{display:none;position:fixed;left:0;right:0;top:calc(14px + env(safe-area-inset-top,0px));text-align:center;font:500 14px var(--display);color:var(--gold);pointer-events:none}
@@ -131,7 +131,7 @@ function audioInit(){
   const comp=ac.createDynamicsCompressor();comp.connect(ac.destination);
   master=ac.createGain();master.gain.value=muted?0:1;master.connect(comp);
   musicBus=ac.createGain();musicBus.gain.value=.55;musicBus.connect(master);
-  sfxBus=ac.createGain();sfxBus.connect(master);
+  sfxBus=ac.createGain();sfxBus.connect(master);applyVolumes(true);
   const dl=ac.createDelay(),fb=ac.createGain(),wet=ac.createGain();dl.delayTime.value=.33;fb.gain.value=.3;wet.gain.value=.32;
   musicBus.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(master);
   drone=ac.createGain();drone.gain.value=0;drone.connect(musicBus);
@@ -245,6 +245,7 @@ function press(k){
   if(k==='shake'){shakeOn=!shakeOn;store.set('gunpo-shake',shakeOn?'1':'0');toast('畫面震動：'+(shakeOn?'開':'關'));return;}
   if(mode==='story'){storyInput(k);return;}
   if(mode==='title'){menuInput(k);return;}
+  if(paused&&setOpen){settingsInput(k);return;}
   if(shopOpen){shopInput(k);return;}
   if(run&&run.rush&&(mode==='win'||mode==='dead')&&(k==='pause'||k==='dodge'||k==='heal')){backToRush();return;}
   if(k==='pause'){togglePause();return;}
@@ -253,7 +254,7 @@ function press(k){
   if(mode!=='play'&&(k==='start'||k==='attack'||k==='jump'))startOrRetry();
 }
 function release(k){held[k]=false;}
-function togglePause(){if(mode!=='play'){startOrRetry();return;}paused=!paused;if(paused)for(const k in held)held[k]=false;}
+function togglePause(){if(mode!=='play'){startOrRetry();return;}paused=!paused;setOpen=false;if(paused)for(const k in held)held[k]=false;}
 addEventListener('keydown',e=>{const k=KEYMAP[e.code];if(k){e.preventDefault();if(!e.repeat)press(k);}});
 addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)release(k);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play'&&!paused&&!shopOpen)togglePause();});
@@ -271,7 +272,7 @@ cv.addEventListener('pointerdown',ev=>{
   audioInit();const r=cv.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*W,y=(ev.clientY-r.top)/r.height*H;
   for(let i=hitRects.length-1;i>=0;i--){const h=hitRects[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.act();return;}}
   if(mode==='story'){storyInput('start');return;}
-  if(mode==='title'||shopOpen)return;
+  if(mode==='title'||shopOpen||setOpen)return;
   if(paused){paused=false;return;}
   if(mode!=='play')startOrRetry();
 });
@@ -293,8 +294,8 @@ function pollPad(){
 
 // ---------- menus ----------
 function mainItems(){
-  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()]
-    :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()];
+  return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem(),settingsItem()]
+    :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem(),settingsItem()];
 }
 function loreItem(){return{label:'百妖錄　'+loreCount()+' / '+LORE.length,act:()=>{titleSub='lore';}};
 }
@@ -303,6 +304,7 @@ function menuInput(k){
     if(k==='up'||k==='jump'||k==='left')titleSel=(titleSel+items.length-1)%items.length;
     else if(k==='down'||k==='right')titleSel=(titleSel+1)%items.length;
     else if(k==='start'||k==='attack')items[titleSel].act();}
+  else if(titleSub==='settings')settingsInput(k);
   else if(titleSub==='lore'){
     if(k==='up'||k==='jump'||k==='left')loreSel=(loreSel+LORE.length-1)%LORE.length;
     else if(k==='down'||k==='right')loreSel=(loreSel+1)%LORE.length;
@@ -320,6 +322,71 @@ function menuInput(k){
     else if(k==='start'||k==='attack')newRun(diffSel);
     else if(k==='dodge'||k==='pause'||k==='heal')titleSub='main';}
 }
+// ---------- settings (設定) ----------
+const pctPref=k=>{const v=parseInt(store.get(k),10);return isNaN(v)?100:clamp(Math.round(v/10)*10,0,100);};
+const SET={music:pctPref('gunpo-vol-music'),sfx:pctPref('gunpo-vol-sfx'),dmg:store.get('gunpo-dmgnum')!=='0',pad:clamp(parseInt(store.get('gunpo-padsize')||'1',10)||0,0,2)};
+const PAD_SIZES=['小','中','大'],PAD_SCALE=[.8,1,1.25];
+let setSel=0,setOpen=false;
+const SET_ROWS=[
+  {name:'音樂音量',desc:'背景音樂與環境聲',val:()=>SET.music+'%',bar:()=>SET.music},
+  {name:'音效音量',desc:'攻擊、受擊等效果音',val:()=>SET.sfx+'%',bar:()=>SET.sfx},
+  {name:'畫面震動',desc:'重擊與受擊時的鏡頭晃動',val:()=>shakeOn?'開':'關'},
+  {name:'傷害數字',desc:'命中與受傷時顯示數值',val:()=>SET.dmg?'開':'關'},
+  {name:'觸控按鈕大小',desc:touchUI?'畫面上的觸控按鍵':'僅在觸控裝置上顯示',val:()=>PAD_SIZES[SET.pad]}];
+function settingsItem(){return{label:'設定',act:()=>{titleSub='settings';setSel=0;}};}
+function openPauseSettings(){setOpen=true;setSel=0;}
+function closeSettings(){if(mode==='title')titleSub='main';else setOpen=false;}
+function applyVolumes(now){
+  if(!ac||!musicBus)return;const m=.55*SET.music/100,f=SET.sfx/100;
+  if(now){musicBus.gain.value=m;sfxBus.gain.value=f;}
+  else{musicBus.gain.setTargetAtTime(m,ac.currentTime,.03);sfxBus.gain.setTargetAtTime(f,ac.currentTime,.03);}
+}
+function applySettings(){applyVolumes();pad.style.setProperty('--ps',PAD_SCALE[SET.pad]);}
+function setChange(i,d){
+  if(i===0)SET.music=clamp(SET.music+d*10,0,100);
+  else if(i===1)SET.sfx=clamp(SET.sfx+d*10,0,100);
+  else if(i===2){shakeOn=!shakeOn;store.set('gunpo-shake',shakeOn?'1':'0');}
+  else if(i===3)SET.dmg=!SET.dmg;
+  else if(i===4)SET.pad=(SET.pad+d+3)%3;
+  store.set('gunpo-vol-music',String(SET.music));store.set('gunpo-vol-sfx',String(SET.sfx));
+  store.set('gunpo-dmgnum',SET.dmg?'1':'0');store.set('gunpo-padsize',String(SET.pad));
+  applySettings();if(i===1)tone(660,880,.08,'triangle',.15);
+}
+function settingsInput(k){
+  const n=SET_ROWS.length;
+  if(k==='up'||k==='jump')setSel=(setSel+n)%(n+1);
+  else if(k==='down')setSel=(setSel+1)%(n+1);
+  else if((k==='left'||k==='right')&&setSel<n)setChange(setSel,k==='left'?-1:1);
+  else if(k==='start'||k==='attack'){if(setSel===n)closeSettings();else if(setSel>1)setChange(setSel,1);}
+  else if(k==='dodge'||k==='pause'||k==='heal')closeSettings();
+}
+function drawSettings(){
+  ctx.fillStyle='rgba(6,6,8,.72)';ctx.fillRect(0,0,W,H);
+  const px=W/2-300,py=40,pw=600,ph=460,y0=py+70,rh=56,n=SET_ROWS.length;
+  ctx.fillStyle='rgba(20,17,14,.96)';ctx.fillRect(px,py,pw,ph);ctx.strokeStyle='rgba(217,164,65,.5)';ctx.lineWidth=1;ctx.strokeRect(px+.5,py+.5,pw-1,ph-1);
+  ctx.textAlign='left';ctx.fillStyle='#efe6d2';ctx.font='900 24px '+FONT;ctx.fillText('設定',px+24,py+42);
+  ctx.textAlign='right';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;ctx.fillText('M 靜音（目前：'+(muted?'靜音':'有聲')+'）',px+pw-24,py+40);
+  SET_ROWS.forEach((r,i)=>{const y=y0+i*rh,sel=i===setSel,ax=px+pw-272,bx=px+pw-74,cx=(ax+52+bx)/2;
+    if(sel){ctx.fillStyle='rgba(217,164,65,.14)';ctx.fillRect(px+10,y,pw-20,rh-6);ctx.fillStyle='#d9a441';ctx.fillRect(px+10,y,3,rh-6);}
+    hitRects.push({x:px+10,y,w:pw-20,h:rh-6,act:()=>{setSel=i;}});
+    ctx.textAlign='left';ctx.fillStyle=sel?'#ffe6a0':'#e9dfc8';ctx.font='900 17px '+FONT;ctx.fillText(r.name,px+28,y+22);
+    ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 12px '+FONT;ctx.fillText(r.desc,px+28,y+40);
+    ctx.textAlign='center';ctx.lineWidth=1;
+    [[ax,'◀',-1],[bx,'▶',1]].forEach(([x,g,d])=>{ctx.fillStyle=sel?'rgba(217,164,65,.2)':'rgba(8,8,10,.5)';ctx.fillRect(x,y,52,rh-6);
+      ctx.strokeStyle=sel?'rgba(217,164,65,.7)':'rgba(217,164,65,.28)';ctx.strokeRect(x+.5,y+.5,51,rh-7);
+      ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 18px '+FONT;ctx.fillText(g,x+26,y+31);
+      hitRects.push({x,y,w:52,h:rh-6,act:()=>{setSel=i;setChange(i,d);}});});
+    ctx.fillStyle=sel?'#ffe6a0':'#e9dfc8';ctx.font='900 18px '+FONT;
+    if(r.bar){ctx.fillText(r.val(),cx,y+21);const v=r.bar()/10;for(let s=0;s<10;s++){ctx.fillStyle=s<v?'#d9a441':'rgba(217,164,65,.18)';ctx.fillRect(cx-69+s*14,y+30,12,7);}}
+    else ctx.fillText(r.val(),cx,y+31);});
+  const ly=y0+n*rh,sel=setSel===n;
+  ctx.fillStyle=sel?'rgba(217,164,65,.14)':'rgba(255,255,255,.03)';ctx.fillRect(px+10,ly+4,pw-20,44);
+  ctx.textAlign='center';ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 17px '+FONT;ctx.fillText('返回',W/2,ly+32);
+  hitRects.push({x:px+10,y:ly+4,w:pw-20,h:44,act:closeSettings});
+  ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 12px '+FONT;
+  ctx.fillText(touchUI?'輕觸 ◀ ▶ 調整，輕觸返回離開':'W / S 選擇　A / D 調整　Esc 返回　設定自動儲存',W/2,py+ph-14);
+}
+applySettings();
 function startChallenge(c){
   store.set('gunpo-diff',String(diffSel));
   const g=c==='g';
@@ -556,7 +623,7 @@ function damageEnemy(e,hb,mult,ox,main){
   if(main){hitstop=hb.heavy?.13:.055;shake=Math.max(shake,hb.heavy?9:3);if(hb.heavy){sfx.heavy();rumble(.5,110);}else sfx.hit();}else sfx.hit();
   if(hb.heavy&&e.frozen>0&&!(e.type==='crane'&&e.y<GROUND))e.frozen=0;
   const bx=enemyBox(e);
-  addText(e.x+rnd(-15,15),bx.y-8,dmg,hb.heavy?'#ffd36b':main?'#efe6d2':'#e8c46a',hb.heavy?30:main?20:16);
+  if(SET.dmg)addText(e.x+rnd(-15,15),bx.y-8,dmg,hb.heavy?'#ffd36b':main?'#efe6d2':'#e8c46a',hb.heavy?30:main?20:16);
   sparks(e.x-Math.sign(e.x-ox)*14,bx.y+bx.h*.45,hb.heavy?14:6,hb.heavy?'#ffd36b':'#efe6d2');
   const dir=Math.sign(e.x-ox)||P.face;
   if(isBoss(e)){
@@ -934,7 +1001,7 @@ function hurtPlayer(dmg,fromX){
   }
   dmg=Math.max(1,Math.round(dmg*DIFF[run.diff].dmg*(1+.25*(run.ng||0))));
   P.hp-=dmg;P.inv=.7;run.stats.taken=(run.stats.taken||0)+1;sfx.hurt();rumble(.7,160);shake=Math.max(shake,7);hitstop=.07;
-  addText(P.x,P.y-110,'-'+dmg,'#e0614f',22);burst(P.x,P.y-50,14,'#b8322a',180,.5,300);
+  if(SET.dmg)addText(P.x,P.y-110,'-'+dmg,'#e0614f',22);burst(P.x,P.y-50,14,'#b8322a',180,.5,300);
   if(P.hp<=0){P.hp=0;setP('dead');P.vx=(P.x<fromX?-1:1)*200;mode='dead';deadT=0;run.stats.deaths++;step=0;endClones();inkSplat(P.x,6,'60,10,8');return true;}
   if(P.state!=='heavy'||P.t>.2){setP('hurt');P.vx=(P.x<fromX?-1:1)*260;}
   return true;
@@ -1664,15 +1731,16 @@ function drawTitle(){
     ctx.fillStyle='#efe6d2';ctx.font='900 84px '+FONT;ctx.fillText('棍破山河',W/2+40,174);
     ctx.fillStyle='#d9a441';ctx.font='500 18px '+FONT;ctx.fillText('一隻石猿，一根鐵棍，踏破三回妖境。',W/2+40,212);
     const lines=['A / D 移動　空白 / W 跳躍　L / Shift 閃避','J 輕棍四段　K 按住蓄力重棍　空中 J 迴旋、K 落棍','I 定身術　O 分身術　R 葫蘆　F 土地祠修習　Esc 暫停'];
-    ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;lines.forEach((l,i)=>ctx.fillText(l,W/2+40,256+i*24));
-    const items=mainItems();titleSel=clamp(titleSel,0,items.length-1);
-    items.forEach((it,i)=>{const yy=352+i*42,sel=i===titleSel;
-      ctx.fillStyle=sel?'rgba(217,164,65,.16)':'rgba(8,8,10,.4)';ctx.fillRect(W/2+40-180,yy-26,360,38);
-      ctx.strokeStyle=sel?'rgba(217,164,65,.8)':'rgba(217,164,65,.25)';ctx.lineWidth=1;ctx.strokeRect(W/2+40-179.5,yy-25.5,359,37);
+    const items=mainItems(),cpt=items.length>4,gap=cpt?34:42,bh=gap-4,y0=cpt?320:352,by=cpt?22:26;titleSel=clamp(titleSel,0,items.length-1);
+    ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;lines.forEach((l,i)=>ctx.fillText(l,W/2+40,(cpt?248:256)+i*(cpt?22:24)));
+    items.forEach((it,i)=>{const yy=y0+i*gap,sel=i===titleSel;
+      ctx.fillStyle=sel?'rgba(217,164,65,.16)':'rgba(8,8,10,.4)';ctx.fillRect(W/2+40-180,yy-by,360,bh);
+      ctx.strokeStyle=sel?'rgba(217,164,65,.8)':'rgba(217,164,65,.25)';ctx.lineWidth=1;ctx.strokeRect(W/2+40-179.5,yy-by+.5,359,bh-1);
       ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 18px '+FONT;ctx.fillText(it.label,W/2+40,yy);
-      hitRects.push({x:W/2+40-180,y:yy-26,w:360,h:38,act:()=>{titleSel=i;it.act();}});});
+      hitRects.push({x:W/2+40-180,y:yy-by,w:360,h:bh,act:()=>{titleSel=i;it.act();}});});
     ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 13px '+FONT;
-    ctx.fillText(touchUI?'輕觸選項開始':'W / S 選擇　Enter 確認　支援手把',W/2+40,352+items.length*42+6);
+    ctx.fillText(touchUI?'輕觸選項開始':'W / S 選擇　Enter 確認　支援手把',W/2+40,y0+(items.length-1)*gap+(cpt?40:48));
+  }else if(titleSub==='settings'){drawSettings();
   }else if(titleSub==='lore'){drawLore();
   }else if(titleSub==='rush'){
     ctx.fillStyle='#efe6d2';ctx.font='900 40px '+FONT;ctx.fillText('Boss 挑戰',W/2,92);
@@ -1774,14 +1842,16 @@ function drawOverlay(){
     const b=getBest(run.diff);ctx.fillStyle=newRecord?'#ffd36b':'#c9bfa8';ctx.fillText(run.ng?'二周目不計入最佳紀錄':newRecord?'新紀錄！':'最佳紀錄 '+fmtTime(b),W/2,H/2+40);
     ctx.fillStyle='#d9a441';ctx.font='500 15px '+FONT;ctx.fillText('技藝與靈蘊已保留，可從標題「繼續旅程」進入'+(run.ng+2)+'周目（敵人更強）',W/2,H/2+66);
     if(winT>2){ctx.fillStyle='#c9bfa8';ctx.font='500 18px '+FONT;ctx.fillText('Enter／輕觸 回到標題',W/2,H/2+104);}ctx.globalAlpha=1;}
-  if(paused){ctx.fillStyle='rgba(6,6,8,.8)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';
+  if(paused&&setOpen)drawSettings();
+  else if(paused){ctx.fillStyle='rgba(6,6,8,.8)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';
     ctx.fillStyle='#efe6d2';ctx.font='900 44px '+FONT;ctx.fillText('暫停',W/2,92);
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText(CH[worldCh].name+' '+CH[worldCh].place+' · '+DIFF[run.diff].name+' · 用時 '+fmtTime(run.elapsed),W/2,120);
     const rows=[['移動','A / D'],['跳躍','空白 / W'],['輕棍（四段）','J'],['蓄力重棍','按住 K'],['空中迴旋／落棍','空中 J／K'],['閃避','L / Shift'],
       ['識破後反擊','閃避瞬間躲過攻擊，再按 J'],['定身術／分身術','I／O'],['葫蘆','R'],['土地祠修習','靠近後按 F'],['聲音開關','M（目前：'+(muted?'關':'開')+'）'],['畫面震動','V（目前：'+(shakeOn?'開':'關')+'）']];
-    ctx.font='500 16px '+FONT;rows.forEach((r,i)=>{ctx.textAlign='right';ctx.fillStyle='#d9a441';ctx.fillText(r[0],W/2-16,160+i*26);ctx.textAlign='left';ctx.fillStyle='#c9bfa8';ctx.fillText(r[1],W/2+16,160+i*26);});
-    ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,484);
-    panelText('回到標題（進度停在上次存檔）',512,'#c9bfa8',13,()=>{paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
+    ctx.font='500 16px '+FONT;rows.forEach((r,i)=>{ctx.textAlign='right';ctx.fillStyle='#d9a441';ctx.fillText(r[0],W/2-16,156+i*24);ctx.textAlign='left';ctx.fillStyle='#c9bfa8';ctx.fillText(r[1],W/2+16,156+i*24);});
+    ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,448);
+    panelText('設定',484,'#e9dfc8',15,openPauseSettings);
+    panelText('回到標題（進度停在上次存檔）',520,'#c9bfa8',13,()=>{paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
 }
 
 // ---------- story & bestiary ----------
