@@ -3022,7 +3022,7 @@ function updateSpiritCast(dt,move){
   const k=P.spiritKind,t=P.t;
   if(k===1){
     if(t<.08)P.vx=0;
-    else if(t<.42){P.vx=P.face*1100;spiritHit({x:P.x-55,y:P.y-105,w:110,h:105},P.spiritSet,{dmg:68,heavy:true,breaker:true,knock:320},P.x-P.face*60,true);
+    else if(t<.42){P.vx=P.face*1100;spiritHit({x:P.x-55,y:P.y-150,w:110,h:150},P.spiritSet,{dmg:68,heavy:true,breaker:true,knock:320},P.x-P.face*60,true);
       if(Math.random()<.7)wisps(P.x-P.face*30,P.y-30,1,30);
       if(spiritFx.length<40)spiritFx.push({kind:'ghost',x:P.x,y:P.y,face:P.face,t:0,life:.28,anim:P.anim});}
     else{P.vx*=.8;if(P.spiritStep===0){P.spiritStep=1;P.spiritSet=new Set();sfx.heavy();shake=Math.max(shake,7);ring(P.x+P.face*40,GROUND,120,'rgba(220,235,255,.9)');
