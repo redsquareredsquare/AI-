@@ -218,7 +218,7 @@ const ATK=[
   {dur:.66,hs:.14,he:.40,dmg:9,lunge:230,st:14,reach:135,spin:true,a0:-.5,a1:-.5+Math.PI*4,mid:.27}
 ];
 const GUARD={idle:1,guard:1,wind:1};
-function loadSave(){try{const s=JSON.parse(store.get('gunpo-save')||'null');return s&&s.ch&&s.up?s:null;}catch(e){return null;}}
+function loadSave(){try{const s=JSON.parse(store.get('gunpo-save')||'null');return s&&s.up&&CH[s.ch]&&DIFF[s.diff]?s:null;}catch(e){return null;}}
 function saveRun(cp){if(!run||run.rush)return;run.cp=cp;store.set('gunpo-save',JSON.stringify(run));}
 const rushBest=(c,d)=>parseFloat(store.get('gunpo-rush-'+c+'-'+d))||null;
 let rushSel=0,rushRecord=false,gauntletNext=0;
@@ -280,7 +280,8 @@ const GP_MAP={0:'jump',1:'dodge',2:'attack',3:'heavy',4:'clone',5:'spell',6:'hea
 let gpPrev={},gpSeen=false;
 function pollPad(){
   const gps=navigator.getGamepads?navigator.getGamepads():null;if(!gps)return;
-  let gp=null;for(const g of gps)if(g){gp=g;break;}if(!gp)return;
+  let gp=null;for(const g of gps)if(g){gp=g;break;}
+  if(!gp){for(const k in gpPrev)release(k);gpPrev={};return;}
   if(!gpSeen){gpSeen=true;toast('已連接手把');}
   const st={};
   for(const i in GP_MAP){const b=gp.buttons[i];if(b&&b.pressed)st[GP_MAP[i]]=true;}
@@ -334,7 +335,7 @@ function newRun(d){
   hintsSeen={};startStory('序',PROLOGUE,()=>startPlay('start'));
 }
 function continueRun(){run=loadSave();if(!run){saveCache=null;return;}run.stats=run.stats||{hits:0,perfect:0,deaths:0,counters:0};hintsSeen={};startPlay(run.cp||'start');}
-function startPlay(cp){mode='play';paused=false;shopOpen=false;checkpoint=cp;resetWorld(cp);clearBuf();for(const k in held)held[k]=false;}
+function startPlay(cp){gauntletNext=0;shopSoon=0;mode='play';paused=false;shopOpen=false;checkpoint=cp;resetWorld(cp);clearBuf();for(const k in held)held[k]=false;}
 function nearShrine(){if(mode!=='play'||bossStarted||!P||P.state==='dead')return null;return SHRINES.find(s=>Math.abs(P.x-s.x)<70)||null;}
 function openShop(sh){
   if(!sh)return;shopTalk=(CH[worldCh].talk||[])[sh.id==='start'?0:1]||'';P.hp=P.maxHp;P.gourd=P.maxGourd;P.st=P.maxSt;P.exhaust=false;checkpoint=sh.id;if(sh.id==='shrine')shrineLit=true;
@@ -581,6 +582,7 @@ function killEnemy(e){
   e.dead=true;e.state='dead';e.t=0;burst(e.x,e.y-30,26,'#3c3f44',200,.9,400);inkSplat(e.x,7);P.focus=Math.min(3,P.focus+.3*ST.focus);gainEss(e);unlockLore(e.type);
 }
 function bossDefeated(e){
+  if(mode!=='play')return;
   unlockLore(e.type);
   if(run.rush){
     if(run.gauntlet&&run.ch<3){gauntletNext=3.2;showBanner('下一位',CH[run.ch+1].boss+' · 氣血延續，葫蘆 +1',2.8);return;}
@@ -722,10 +724,10 @@ function updateBoss(e,dt){
       if(e.cd<=0&&P.state!=='dead'){
         const r=Math.random();let pick;
         if(e.phase===2&&r<.17)pick='howl';
-        else if(e.phase===2&&r<.32&&ad>180)pick='throw';
+        else if(e.phase===2&&r<.32&&ad>180&&e.hasBlade)pick='throw';
         else if(ad<210)pick=Math.random()<.72?'slash':'leap';
         else if(ad<520)pick=Math.random()<.5?'dash':'leap';
-        else pick=e.phase===2&&Math.random()<.4?'throw':'dash';
+        else pick=e.phase===2&&e.hasBlade&&Math.random()<.4?'throw':'dash';
         if(pick===e.lastAtk&&pick!=='slash'&&Math.random()<.6)pick=ad<210?'slash':'dash';
         bossAttack(e,pick);
       }
@@ -1010,7 +1012,7 @@ function update(rdt){
     UPDATERS[e.type](e,dt);
     const hb=enemyHit(e);
     if(!hb)e.whiff=false;
-    else if(!e.whiff&&overlap(hb,playerBox())){hurtPlayer(hb.dmg,e.x);if(P.state==='dodge'&&P.t<.28)e.whiff=true;}
+    else if(!e.whiff&&overlap(hb,playerBox())){if(hurtPlayer(hb.dmg,e.x)||(P.state==='dodge'&&P.t<.28))e.whiff=true;}
   }
   enemies=enemies.filter(e=>!(e.dead&&e.alpha<=0&&!isBoss(e)));
   updateProj(dt);
@@ -1781,7 +1783,7 @@ function drawOverlay(){
       ['識破後反擊','閃避瞬間躲過攻擊，再按 J'],['定身術／分身術','I／O'],['葫蘆','R'],['土地祠修習','靠近後按 F'],['聲音開關','M（目前：'+(muted?'關':'開')+'）'],['畫面震動','V（目前：'+(shakeOn?'開':'關')+'）']];
     ctx.font='500 16px '+FONT;rows.forEach((r,i)=>{ctx.textAlign='right';ctx.fillStyle='#d9a441';ctx.fillText(r[0],W/2-16,160+i*26);ctx.textAlign='left';ctx.fillStyle='#c9bfa8';ctx.fillText(r[1],W/2+16,160+i*26);});
     ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,484);
-    panelText('回到標題（進度停在上次存檔）',512,'#c9bfa8',13,()=>{paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
+    panelText('回到標題（進度停在上次存檔）',512,'#c9bfa8',13,()=>{gauntletNext=0;shopSoon=0;paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
 }
 
 // ---------- story & bestiary ----------
@@ -1909,7 +1911,7 @@ function render(){
   drawHUD();drawBanner();
   if(hintMsg&&!paused&&!shopOpen){ctx.globalAlpha=Math.min(1,hintMsg.life*2,(5-hintMsg.life)*4);panelText(hintMsg.text,96,'#e9dfc8',15);ctx.globalAlpha=1;}
   const sh=!shopOpen&&!paused&&nearShrine();
-  if(sh)panelText(touchUI?'輕觸此處：歇息 · 修習':'按 F 歇息 · 修習',H-70,'#ffe6a0',15,()=>openShop(sh));
+  if(sh)panelText(touchUI?'輕觸此處：歇息 · 修習':'按 F 歇息 · 修習',H-70,'#ffe6a0',15,()=>{if(P.ground&&['idle','run','jump'].includes(P.state))openShop(sh);});
   if(!bossStarted&&mode==='play'&&P.x<300&&P.x>150&&run.elapsed<8&&!sh){ctx.textAlign='center';ctx.fillStyle='rgba(233,223,200,.7)';ctx.font='500 15px '+FONT;ctx.fillText('向右前行 →',W/2,H-30);}
   if(subtitle){ctx.globalAlpha=clamp(Math.min(subtitle.life*1.5,(4.2-subtitle.life)*3),0,1);panelText(subtitle.text,H-86,'#efe6d2',16);ctx.globalAlpha=1;}
   if(fadeIn>0){ctx.fillStyle=`rgba(0,0,0,${fadeIn})`;ctx.fillRect(0,0,W,H);}
