@@ -2710,14 +2710,14 @@ function drawOverlay(){
       if(run.rush)panelText(touchUI?'返回挑戰選單':'Esc 返回挑戰選單',H/2+110,'#c9bfa8',14,backToRush);}ctx.globalAlpha=1;}
   if(mode==='clear'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText(CH[clearedCh].name+' 終',W/2,H/2-112);
-    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-52);
+    brushStroke(W/2-185,H/2-70,370*ease(winT/.7),74,'rgba(0,0,0,.6)',2.2);ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-52);
     ctx.fillStyle='#efe6d2';ctx.font='500 17px '+FONT;ctx.fillText(CH[clearedCh].epi,W/2,H/2-6);
     ctx.fillStyle='#c9bfa8';ctx.font='500 16px '+FONT;ctx.fillText(`目前用時 ${fmtTime(run.elapsed)}　身上靈蘊 ${run.ess}`,W/2,H/2+32);
     ctx.font='500 14px '+FONT;ctx.fillText('進度已存。下一回開始時可先於土地祠修習。',W/2,H/2+58);
     if(winT>2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('進入'+CH[clearedCh+1].name+' · '+CH[clearedCh+1].place+'（Enter／輕觸）',W/2,H/2+102);}ctx.globalAlpha=1;}
   if(mode==='win'&&run.rush){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('挑戰成功 · '+DIFF[run.diff].name,W/2,H/2-96);
-    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(run.gauntlet?'三王伏誅':CH[run.ch].clear,W/2,H/2-36);
+    brushStroke(W/2-185,H/2-54,370*ease(winT/.7),74,'rgba(0,0,0,.6)',3.1);ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(run.gauntlet?'三王伏誅':CH[run.ch].clear,W/2,H/2-36);
     ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;const st=run.stats;
     ctx.fillText(`用時 ${fmtTime(run.elapsed)}　命中 ${st.hits}　識破 ${st.perfect}　反擊 ${st.counters}　倒下 ${st.deaths}`,W/2,H/2+8);
     ctx.fillStyle=rushRecord?'#ffd36b':'#c9bfa8';ctx.fillText((rushRecord?'新紀錄！':'最佳紀錄 '+fmtTime(rushBest(rushKey(),run.diff)))+(st.taken?'':'　無傷擊敗！'),W/2,H/2+40);
@@ -2725,7 +2725,7 @@ function drawOverlay(){
       panelText(touchUI?'返回挑戰選單':'Esc 返回挑戰選單',H/2+136,'#c9bfa8',14,backToRush);}ctx.globalAlpha=1;}
   else if(mode==='win'){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('全劇終',W/2,H/2-96);
-    ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[3].clear,W/2,H/2-36);
+    brushStroke(W/2-185,H/2-54,370*ease(winT/.7),74,'rgba(0,0,0,.6)',5.3);ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[3].clear,W/2,H/2-36);
     ctx.fillStyle='#e9dfc8';ctx.font='500 18px '+FONT;const st=run.stats;
     ctx.fillText(`${DIFF[run.diff].name}　總用時 ${fmtTime(run.elapsed)}　命中 ${st.hits}　識破 ${st.perfect}　反擊 ${st.counters}　倒下 ${st.deaths}`,W/2,H/2+8);
     const b=getBest(run.diff);ctx.fillStyle=newRecord?'#ffd36b':'#c9bfa8';ctx.fillText(run.ng?'二周目不計入最佳紀錄':newRecord?'新紀錄！':'最佳紀錄 '+fmtTime(b),W/2,H/2+40);
@@ -2997,7 +2997,7 @@ function render(){
   if(fadeIn>0)drawInkFade(fadeIn);
   if(shopOpen)drawShop();
   drawOverlay();
-  if(toastMsg)panelText(toastMsg.text,shopOpen?468:130,'#d9a441',14);
+  if(toastMsg)panelText(toastMsg.text,shopOpen?468:(mode==='clear'||mode==='win'||mode==='dead')?H-34:130,'#d9a441',14);
 }
 function drawAmbient(p2){
   if(worldCh===3&&mode!=='title'){ctx.fillStyle=p2?'rgba(255,200,120,.9)':'rgba(255,140,60,.8)';for(const a of ambient)ctx.fillRect(a.x,a.y,a.s+.8,a.s+.8);return;}
