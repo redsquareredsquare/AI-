@@ -2894,6 +2894,7 @@ function render(){
   ctx.save();ctx.translate(sx,sy);
   if(zoom!==1){const f=zoomFocus||{x:P.x,y:P.y-60},fx=clamp(f.x-camX,120,W-120),fy=f.y;ctx.translate(fx,fy);ctx.scale(zoom,zoom);ctx.translate(-fx,-fy);}
   drawBackdrop(camX,p2);drawGround(camX);
+  if(SET.fx)drawMist(camX);
   ctx.save();ctx.translate(-Math.round(camX),0);
   drawProps();drawDecals();
   if(arena&&bossStarted){ctx.fillStyle=worldCh===2?'rgba(120,190,230,.16)':'rgba(200,70,40,.18)';ctx.fillRect(arena.l-6,GROUND-260,6,260);ctx.fillRect(arena.r,GROUND-260,6,260);}
@@ -2913,7 +2914,7 @@ function render(){
   for(const t of texts){ctx.globalAlpha=clamp(t.life*2,0,1);ctx.font='900 '+t.size+'px '+FONT;ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(t.s,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.s,t.x,t.y);}
   ctx.globalAlpha=1;
   ctx.restore();
-  if(SET.fx)drawMist(camX);drawForeground(camX);
+  drawForeground(camX);
   drawAmbient(p2);
   ctx.restore();
   const vg=ctx.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,H*.9);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
