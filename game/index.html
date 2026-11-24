@@ -230,7 +230,66 @@ let story=null,subtitle=null,shopTalk='',loreSel=0;
 const loreSet=new Set((()=>{try{return JSON.parse(store.get('gunpo-lore')||'[]');}catch(e){return [];}})());
 const loreHas=id=>id==='player'||loreSet.has(id);
 const loreCount=()=>LORE.filter(l=>loreHas(l.id)).length;
-function unlockLore(id){const L=LORE.find(l=>l.id===id);if(!L||loreHas(id))return;loreSet.add(id);store.set('gunpo-lore',JSON.stringify([...loreSet]));toast('百妖錄 新增：'+L.name);}
+function unlockLore(id){const L=LORE.find(l=>l.id===id);if(!L||loreHas(id))return;loreSet.add(id);store.set('gunpo-lore',JSON.stringify([...loreSet]));toast('百妖錄 新增：'+L.name);achLore();}
+// ---------- achievements (成就) ----------
+const ACH=[
+  {id:'perfect',name:'初識破',cond:'首次以閃避識破敵招'},
+  {id:'counter',name:'反客為主',cond:'累計施展反擊 10 次',goal:10},
+  {id:'ch1',name:'一黑松嶺',cond:'旅程中擊敗蒼牙狼王'},
+  {id:'ch2',name:'二竹海寺',cond:'旅程中擊敗玄鶴禪仙'},
+  {id:'journey',name:'棍破山河',cond:'擊敗熔山魔君，走完旅程'},
+  {id:'hard',name:'渡劫者',cond:'以渡劫難度走完旅程'},
+  {id:'nosip',name:'不飲一口',cond:'旅程中不喝葫蘆擊敗一位妖王'},
+  {id:'nohit',name:'毫髮無傷',cond:'Boss 挑戰中無傷擊敗一位妖王'},
+  {id:'gauntlet',name:'三王伏誅',cond:'Boss 挑戰中完成三王連戰'},
+  {id:'craft',name:'技藝圓滿',cond:'任一項技藝修習至圓滿'},
+  {id:'lore',name:'百妖齊錄',cond:'百妖錄收齊全部 10 頁'},
+  {id:'crane',name:'定身墜鶴',cond:'以定身術將空中的玄鶴打落'}];
+const achData=(()=>{try{const d=JSON.parse(store.get('gunpo-ach')||'null');if(d&&Array.isArray(d.u))return{u:d.u,c:d.c|0};}catch(e){}return{u:[],c:0};})();
+const achSet=new Set(achData.u),achQ=[];
+let loreTab=0,achSel=0,bossSip=false;
+const achHas=id=>achSet.has(id);
+function achSave(){achData.u=[...achSet];store.set('gunpo-ach',JSON.stringify(achData));}
+function achUnlock(id){const A=ACH.find(a=>a.id===id);if(!A||achSet.has(id))return;achSet.add(id);achSave();sfx.buy();achQ.push('成就達成：'+A.name);}
+function achCounter(){achData.c++;if(achData.c>=10)achUnlock('counter');else achSave();}
+function achLore(){if(loreCount()>=LORE.length)achUnlock('lore');}
+function achBoss(e){
+  if(run.rush){if(!run.stats.taken)achUnlock('nohit');if(run.gauntlet&&run.ch>=3)achUnlock('gauntlet');return;}
+  if(!bossSip)achUnlock('nosip');
+  if(worldCh<3)achUnlock('ch'+worldCh);else{achUnlock('journey');if(run.diff===2)achUnlock('hard');}}
+function achInput(k){
+  if(k==='left'||k==='right'){loreTab=1-loreTab;return true;}
+  if(loreTab!==1)return false;
+  if(k==='up'||k==='jump')achSel=(achSel+ACH.length-1)%ACH.length;
+  else if(k==='down')achSel=(achSel+1)%ACH.length;
+  else return false;
+  return true;}
+function drawLoreTabs(){
+  ['百妖錄','成就'].forEach((s,i)=>{const x=W/2-160+i*168,y=28,on=loreTab===i;
+    if(on){ctx.fillStyle='rgba(217,164,65,.14)';ctx.fillRect(x,y,152,50);ctx.fillStyle='#d9a441';ctx.fillRect(x+16,y+47,120,3);}
+    ctx.textAlign='center';ctx.fillStyle=on?'#efe6d2':'rgba(201,191,168,.45)';ctx.font='900 '+(on?30:26)+'px '+FONT;ctx.fillText(s,x+76,y+36);
+    hitRects.push({x,y,w:152,h:50,act:()=>{loreTab=i;}});});
+  ctx.fillStyle='rgba(217,164,65,.5)';ctx.font='500 22px '+FONT;ctx.textAlign='center';ctx.fillText('｜',W/2,62);}
+function drawAch(){
+  const n=ACH.filter(a=>achHas(a.id)).length;
+  ctx.textAlign='center';ctx.fillStyle='#c9bfa8';ctx.font='500 13px '+FONT;ctx.fillText('已達成 '+n+' / '+ACH.length+'　旅程與 Boss 挑戰皆可達成',W/2,98);
+  const gx=40,gy=112,cw=284,ch=86,gap=14,gv=9;
+  ACH.forEach((a,i)=>{const x=gx+(i%3)*(cw+gap),y=gy+Math.floor(i/3)*(ch+gv),has=achHas(a.id),sel=i===achSel;
+    ctx.fillStyle=has?'rgba(46,34,18,.94)':'rgba(20,17,14,.88)';ctx.fillRect(x,y,cw,ch);
+    ctx.strokeStyle=sel?'#d9a441':has?'rgba(217,164,65,.55)':'rgba(217,164,65,.18)';ctx.lineWidth=sel?2:1;ctx.strokeRect(x+.5,y+.5,cw-1,ch-1);
+    if(has){const gl=ctx.createRadialGradient(x+42,y+ch/2,4,x+42,y+ch/2,60);gl.addColorStop(0,'rgba(217,164,65,.22)');gl.addColorStop(1,'rgba(217,164,65,0)');ctx.fillStyle=gl;ctx.fillRect(x+1,y+1,cw/2,ch-2);}
+    ctx.beginPath();ctx.arc(x+42,y+ch/2,24,0,Math.PI*2);
+    if(has){ctx.fillStyle='#a8322a';ctx.fill();ctx.strokeStyle='#d9a441';ctx.lineWidth=1.5;ctx.stroke();}else{ctx.strokeStyle='rgba(201,191,168,.25)';ctx.lineWidth=1.5;ctx.stroke();}
+    ctx.textAlign='center';ctx.fillStyle=has?'#ffe6a0':'rgba(201,191,168,.3)';ctx.font='900 22px '+FONT;ctx.fillText(has?a.name[0]:'？',x+42,y+ch/2+8);
+    ctx.textAlign='left';ctx.fillStyle=has?(sel?'#ffe6a0':'#efe6d2'):'rgba(201,191,168,.55)';ctx.font='900 19px '+FONT;ctx.fillText(a.name,x+78,y+34);
+    ctx.fillStyle=has?'#d9a441':'rgba(201,191,168,.5)';ctx.font='500 13px '+FONT;ctx.fillText(a.cond,x+78,y+60);
+    if(a.goal&&!has){ctx.textAlign='right';ctx.fillStyle='rgba(217,164,65,.6)';ctx.font='500 12px '+FONT;ctx.fillText(Math.min(achData.c,a.goal)+' / '+a.goal,x+cw-12,y+34);}
+    if(has){ctx.textAlign='right';ctx.fillStyle='rgba(217,164,65,.8)';ctx.font='500 12px '+FONT;ctx.fillText('達成',x+cw-12,y+34);}
+    hitRects.push({x,y,w:cw,h:ch,act:()=>{achSel=i;}});});
+  ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;
+  ctx.fillText(touchUI?'輕觸上方分頁切換':'A / D 切換分頁　W / S 選擇　Esc 返回',W/2,516);
+  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});}
+achLore();
 const aggr=()=>1/DIFF[run.diff].cd;
 
 // ---------- input ----------
@@ -296,7 +355,7 @@ function mainItems(){
   return saveCache?[{label:`繼續旅程　${CH[saveCache.ch].name} · ${DIFF[saveCache.diff].name}`+(saveCache.ng?' · '+(saveCache.ng+1)+'周目':''),act:continueRun},{label:'新的旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()]
     :[{label:'開始旅程',act:()=>{titleSub='diff';}},{label:'Boss 挑戰',act:()=>{titleSub='rush';}},loreItem()];
 }
-function loreItem(){return{label:'百妖錄　'+loreCount()+' / '+LORE.length,act:()=>{titleSub='lore';}};
+function loreItem(){return{label:'百妖錄　'+loreCount()+' / '+LORE.length+' · 成就 '+achSet.size+' / '+ACH.length,act:()=>{titleSub='lore';}};
 }
 function menuInput(k){
   if(titleSub==='main'){const items=mainItems();titleSel=clamp(titleSel,0,items.length-1);
@@ -304,8 +363,9 @@ function menuInput(k){
     else if(k==='down'||k==='right')titleSel=(titleSel+1)%items.length;
     else if(k==='start'||k==='attack')items[titleSel].act();}
   else if(titleSub==='lore'){
-    if(k==='up'||k==='jump'||k==='left')loreSel=(loreSel+LORE.length-1)%LORE.length;
-    else if(k==='down'||k==='right')loreSel=(loreSel+1)%LORE.length;
+    if(achInput(k));
+    else if(k==='up'||k==='jump')loreSel=(loreSel+LORE.length-1)%LORE.length;
+    else if(k==='down')loreSel=(loreSel+1)%LORE.length;
     else if(k==='dodge'||k==='pause'||k==='heal')titleSub='main';}
   else if(titleSub==='rush'){
     if(k==='left')rushSel=(rushSel+3)%4;
@@ -352,7 +412,7 @@ function buy(i){
   const it=UPG[i],lv=run.up[it.id]||0;
   if(lv>=it.max){toast(it.name+' 已臻圓滿');sfx.deny();return;}
   const c=upgCost(it,lv);if(run.ess<c){toast('靈蘊不足');sfx.deny();return;}
-  run.ess-=c;run.up[it.id]=lv+1;applyStats();P.hp=P.maxHp;P.gourd=P.maxGourd;P.st=P.maxSt;
+  run.ess-=c;run.up[it.id]=lv+1;applyStats();if(lv+1>=it.max)achUnlock('craft');P.hp=P.maxHp;P.gourd=P.maxGourd;P.st=P.maxSt;
   sfx.buy();burst(P.x,P.y-50,30,'#ffd36b',180,.8);toast(it.name+' 修習至第 '+(lv+1)+' 層');saveRun(checkpoint);
 }
 function applyStats(){
@@ -393,7 +453,7 @@ function resetWorld(cp){
   camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;
 }
 function startBoss(){
-  bossStarted=true;arena=ARENA;hintMsg=null;hintQueue=[];
+  bossStarted=true;bossSip=false;arena=ARENA;hintMsg=null;hintQueue=[];
   enemies.forEach(e=>{if(!e.dead&&e.x<arena.l+40){burst(e.x,e.y-30,20,'#3c3f44',160,.8);e.dead=true;e.t=0;}});
   boss=worldCh===1?makeBoss(3300):worldCh===2?makeCrane(3300):makeGolem(3300);enemies.push(boss);
   showBanner(CH[worldCh].boss,CH[worldCh].bossSub,3);if(worldCh===2)sfx.screech();else sfx.roar();shake=10;kickZoom(1.12,1.6,{x:boss.x,y:GROUND-110});
@@ -433,7 +493,7 @@ function tryDodge(move){if(P.st<16)return false;spend(16);P.dodgeDir=move||P.fac
 function startAttack(i){const a=ATK[i];if(P.exhaust&&P.st<a.st)return false;spend(a.st);
   const mv=(held.right?1:0)-(held.left?1:0);if(mv)P.face=mv;
   P.combo=i;P.queued=false;P.midDone=false;newHit();setP('attack');sfx.swing();return true;}
-function startCounter(){P.counterT=0;P.face=P.lastAtkX>P.x?1:-1;newHit();setP('counter');P.inv=Math.max(P.inv,.32);run.stats.counters++;
+function startCounter(){P.counterT=0;P.face=P.lastAtkX>P.x?1:-1;newHit();setP('counter');P.inv=Math.max(P.inv,.32);run.stats.counters++;achCounter();
   sfx.perfect();addText(P.x,P.y-135,'反擊','#ffd36b',26);kickZoom(1.08,.25);}
 function playerBox(){return{x:P.x-15,y:P.y-88,w:30,h:88};}
 function playerHit(x,face){
@@ -507,7 +567,7 @@ function updatePlayer(dt){
     case 'dodge':{const d=.36;P.vx=P.dodgeDir*560*(1-P.t/d);if(P.t>=d)setP('idle');break;}
     case 'hurt':P.vx*=.88;if(P.t>=.34)setP('idle');break;
     case 'heal':
-      P.vx=0;if(P.t>.5&&!P.healed){P.healed=true;P.gourd--;const h=Math.min(ST.heal,P.maxHp-P.hp);P.hp=Math.min(P.maxHp,P.hp+ST.heal);
+      P.vx=0;if(P.t>.5&&!P.healed){P.healed=true;P.gourd--;if(bossStarted)bossSip=true;const h=Math.min(ST.heal,P.maxHp-P.hp);P.hp=Math.min(P.maxHp,P.hp+ST.heal);
         addText(P.x,P.y-110,'+'+Math.round(h),'#9fd18b',22);sfx.heal();burst(P.x,P.y-50,20,'#9fd18b',120,.8);}
       if(P.t>=.85)setP('idle');
       break;
@@ -581,7 +641,7 @@ function killEnemy(e){
   e.dead=true;e.state='dead';e.t=0;burst(e.x,e.y-30,26,'#3c3f44',200,.9,400);inkSplat(e.x,7);P.focus=Math.min(3,P.focus+.3*ST.focus);gainEss(e);unlockLore(e.type);
 }
 function bossDefeated(e){
-  unlockLore(e.type);
+  unlockLore(e.type);achBoss(e);
   if(run.rush){
     if(run.gauntlet&&run.ch<3){gauntletNext=3.2;showBanner('下一位',CH[run.ch+1].boss+' · 氣血延續，葫蘆 +1',2.8);return;}
     mode='win';winT=0;step=0;const k=rushKey(),b=rushBest(k,run.diff);rushRecord=!b||run.elapsed<b;
@@ -927,7 +987,7 @@ function hurtPlayer(dmg,fromX){
   if(P.state==='dead'||mode!=='play')return false;
   const dodging=P.state==='dodge'&&P.t<.28;
   if(dodging||P.inv>0){
-    if(dodging&&!P.perfect&&P.t<ST.perfect){P.perfect=true;run.stats.perfect++;P.focus=Math.min(3,P.focus+.6*ST.focus);P.counterT=.75;P.lastAtkX=fromX;
+    if(dodging&&!P.perfect&&P.t<ST.perfect){P.perfect=true;run.stats.perfect++;achUnlock('perfect');P.focus=Math.min(3,P.focus+.6*ST.focus);P.counterT=.75;P.lastAtkX=fromX;
       timeScale=.3;slowT=.45;kickZoom(1.1,.4);sfx.perfect();addText(P.x,P.y-120,'識破','#ffd36b',30);burst(P.x,P.y-50,24,'#ffd36b',200,.6);
       hint('counter','識破之後立刻按 J，可施展「反擊」');}
     return false;
@@ -982,7 +1042,7 @@ function update(rdt){
   const storm=worldCh===2&&boss&&boss.phase===2&&!boss.dead&&mode!=='title';
   const emb=worldCh===3&&mode!=='title';
   ambient.forEach(a=>{if(emb){a.y-=a.v*2.2*rdt;a.x+=Math.sin(clock*1.3+a.ph)*14*rdt;if(a.y<-6){a.y=H+6;a.x=rnd(0,W);}return;}a.y+=a.v*(storm?5:1)*rdt;a.x+=(Math.sin(clock+a.ph)*8-(storm?90:0))*rdt;a.rot+=rdt;if(a.y>H){a.y=-5;a.x=rnd(0,W+100);}if(a.x<-10)a.x=W+5;});
-  if(toastMsg){toastMsg.life-=rdt;if(toastMsg.life<=0)toastMsg=null;}
+  if(toastMsg){toastMsg.life-=rdt;if(toastMsg.life<=0)toastMsg=null;}if(!toastMsg&&achQ.length)toast(achQ.shift());
   if(mode==='story'){if(story)story.t+=rdt;return;}
   if(mode==='title'||paused||shopOpen)return;
   if(subtitle){subtitle.life-=rdt;if(subtitle.life<=0)subtitle=null;}
@@ -1005,7 +1065,7 @@ function update(rdt){
     if(e.dead){e.t+=dt;e.alpha=Math.max(0,1-e.t/.8);if(e.type==='bat')e.y=Math.min(GROUND-8,e.y+320*dt);continue;}
     if(e.frozen>0){e.frozen-=dt;
       if((e.type==='crane'||e.type==='bat')&&e.y<GROUND-(e.type==='bat'?14:0)){e.y=Math.min(GROUND-(e.type==='bat'?14:0),e.y+560*dt);
-        if(e.type==='crane'&&e.y>=GROUND&&!e.downed){e.downed=true;shake=9;sfx.boom();ring(e.x,GROUND,150);addText(e.x,e.y-200,'墜！','#ffd36b',32);e.state='landed';e.t=-1.4;}}
+        if(e.type==='crane'&&e.y>=GROUND&&!e.downed){e.downed=true;shake=9;sfx.boom();ring(e.x,GROUND,150);addText(e.x,e.y-200,'墜！','#ffd36b',32);achUnlock('crane');e.state='landed';e.t=-1.4;}}
       if(Math.random()<.2)parts.push({x:e.x+rnd(-30,30),y:e.y-rnd(0,isBoss(e)?160:50),vx:0,vy:-30,life:.6,max:.6,col:'#ffd36b',r:1.5,g:0});continue;}
     UPDATERS[e.type](e,dt);
     const hb=enemyHit(e);
@@ -1844,8 +1904,8 @@ function loreDraw(id,cx,by,th){
   ctx.restore();
 }
 function drawLore(){
-  ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 34px '+FONT;ctx.fillText('百妖錄',W/2,64);
-  ctx.fillStyle='#c9bfa8';ctx.font='500 13px '+FONT;ctx.fillText('已錄 '+loreCount()+' / '+LORE.length+'　擊敗妖怪即可收錄',W/2,90);
+  drawLoreTabs();if(loreTab===1){drawAch();return;}
+  ctx.textAlign='center';ctx.fillStyle='#c9bfa8';ctx.font='500 13px '+FONT;ctx.fillText('已錄 '+loreCount()+' / '+LORE.length+'　擊敗妖怪即可收錄',W/2,98);
   LORE.forEach((l,i)=>{const y=114+i*37,sel=i===loreSel,has=loreHas(l.id);
     if(sel){ctx.fillStyle='rgba(217,164,65,.16)';ctx.fillRect(40,y,232,32);ctx.fillStyle='#d9a441';ctx.fillRect(40,y,3,32);}
     ctx.textAlign='left';ctx.fillStyle=has?(sel?'#ffe6a0':'#e9dfc8'):'rgba(201,191,168,.4)';ctx.font=(sel?'900':'500')+' 16px '+FONT;ctx.fillText(has?l.name:'？？？',58,y+22);
@@ -1866,7 +1926,7 @@ function drawLore(){
     ctx.fillStyle='rgba(255,214,140,.92)';ctx.font='500 13px '+FONT;wrapText('應對　'+L.tip,px+22,py+ph-22,pw-44,19);
   }else if(L.where){ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText('出沒於：'+CH[L.where].name+' '+CH[L.where].place,tx,py+130);}
   ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;
-  ctx.fillText(touchUI?'輕觸左側名錄翻閱':'W / S 翻閱　Esc 返回',W/2,516);
+  ctx.fillText(touchUI?'輕觸左側名錄翻閱 · 上方分頁切換':'W / S 翻閱　A / D 切換分頁　Esc 返回',W/2,516);
   ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
 }
 
