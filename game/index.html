@@ -23,7 +23,9 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--paper);overflow
 canvas{display:block;background:var(--ink)}
 #pad{position:fixed;inset:0;pointer-events:none;display:none}
 #pad.on{display:block}
-.grp{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));pointer-events:auto}
+.grp{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none}
+#pad .b{pointer-events:auto}
+#pad.menu .grp,#pad.menu #pauseBtn{display:none}
 .grp.l{left:max(16px,env(safe-area-inset-left,0px));display:flex;gap:10px}
 .grp.r{right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .skills{display:flex;gap:8px}
@@ -288,7 +290,7 @@ function drawAch(){
     hitRects.push({x,y,w:cw,h:ch,act:()=>{achSel=i;}});});
   ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;
   ctx.fillText(touchUI?'輕觸上方分頁切換':'A / D 切換分頁　W / S 選擇　Esc 返回',W/2,516);
-  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});}
+  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:10,y:14,w:140,h:62,act:()=>{titleSub='main';}});}
 achLore();
 const aggr=()=>1/DIFF[run.diff].cd;
 
@@ -319,14 +321,17 @@ addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)release(k);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play'&&!paused&&!shopOpen)togglePause();});
 function take(k){if(buf[k]>0){buf[k]=0;return true;}return false;}
 const pad=document.getElementById('pad');
-const touchUI=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window;
+const touchUI=matchMedia('(pointer: coarse)').matches;
 if(touchUI)pad.classList.add('on');
-pad.querySelectorAll('.b').forEach(b=>{
-  const k=b.dataset.k;
-  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('down');press(k);});
-  const up=()=>{b.classList.remove('down');release(k);};
-  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
-});
+// touch pad: one entry per finger; a finger sliding between ◀ and ▶ switches direction without lifting
+const padPtr={};
+const padBtnAt=(x,y)=>{const el=document.elementFromPoint(x,y);return el&&el.closest?el.closest('#pad .b'):null;};
+pad.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.b');if(!b)return;e.preventDefault();padPtr[e.pointerId]=b;b.classList.add('down');press(b.dataset.k);});
+addEventListener('pointermove',e=>{const cur=padPtr[e.pointerId];if(!cur)return;const b=padBtnAt(e.clientX,e.clientY);
+  const dir=k=>k==='left'||k==='right';
+  if(b&&b!==cur&&dir(b.dataset.k)&&dir(cur.dataset.k)){cur.classList.remove('down');release(cur.dataset.k);padPtr[e.pointerId]=b;b.classList.add('down');press(b.dataset.k);}});
+const padUp=e=>{const cur=padPtr[e.pointerId];if(!cur)return;cur.classList.remove('down');release(cur.dataset.k);delete padPtr[e.pointerId];};
+addEventListener('pointerup',padUp);addEventListener('pointercancel',padUp);
 cv.addEventListener('pointerdown',ev=>{
   audioInit();const r=cv.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*W,y=(ev.clientY-r.top)/r.height*H;
   for(let i=hitRects.length-1;i>=0;i--){const h=hitRects[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.act();return;}}
@@ -1758,7 +1763,7 @@ function drawHUD(){
   skillIcon(x+158,y+38,'定',P.spellCd,ST.spellCd,false,'I');
   skillIcon(x+190,y+38,'化',P.cloneCd,30,P.cloneT>0,'O');
   essIcon(x+222,y+38,6);ctx.fillStyle='#e9dfc8';ctx.font='500 13px '+FONT;ctx.textAlign='left';ctx.fillText(run.ess,x+232,y+43);
-  if(boss&&!boss.dead&&bossStarted){const bw=520,bx=(W-bw)/2,by=H-40;
+  if(boss&&!boss.dead&&bossStarted){const bw=touchUI?360:520,bx=(W-bw)/2,by=H-40;
     ctx.fillStyle='#e9dfc8';ctx.font='900 17px '+FONT;ctx.textAlign='center';ctx.fillText(CH[worldCh].boss,W/2,by-10);
     const col=worldCh===2?(boss.phase===2?'#6fb0d8':'#8a9aa6'):(boss.phase===2?'#d0502e':'#b8322a');
     bar(bx,by,bw,8,boss.hp/boss.maxHp,col,'#1a0a08');
@@ -1792,7 +1797,7 @@ function drawTitle(){
     ctx.fillStyle='#b8322a';ctx.fillRect(W/2+150,92,34,34);ctx.fillStyle='#e9dfc8';ctx.font='900 18px '+FONT;ctx.fillText('猿',W/2+167,115);
     ctx.fillStyle='#efe6d2';ctx.font='900 84px '+FONT;ctx.fillText('棍破山河',W/2+40,174);
     ctx.fillStyle='#d9a441';ctx.font='500 18px '+FONT;ctx.fillText('一隻石猿，一根鐵棍，踏破三回妖境。',W/2+40,212);
-    const lines=['A / D 移動　空白 / W 跳躍　L / Shift 閃避','J 輕棍四段　K 按住蓄力重棍　空中 J 迴旋、K 落棍','I 定身術　O 分身術　R 葫蘆　F 土地祠修習　Esc 暫停'];
+    const lines=touchUI?['◀ ▶ 移動　躍 跳躍　閃 閃避　棍 輕棍　按住 重 蓄力','空中 棍 迴旋、重 落棍　化 分身　定 定身　葫 回血','‖ 暫停　靠近土地祠時輕觸提示即可修習']:['A / D 移動　空白 / W 跳躍　L / Shift 閃避','J 輕棍四段　K 按住蓄力重棍　空中 J 迴旋、K 落棍','I 定身術　O 分身術　R 葫蘆　F 土地祠修習　Esc 暫停'];
     const items=mainItems(),cpt=items.length>4,gap=cpt?34:42,bh=gap-4,y0=cpt?320:352,by=cpt?22:26;titleSel=clamp(titleSel,0,items.length-1);
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;lines.forEach((l,i)=>ctx.fillText(l,W/2+40,(cpt?248:256)+i*(cpt?22:24)));
     items.forEach((it,i)=>{const yy=y0+i*gap,sel=i===titleSel;
@@ -1832,7 +1837,7 @@ function drawTitle(){
       hitRects.push({x,y,w,h:34,act:()=>{diffSel=i;}});});
     ctx.fillStyle='rgba(201,191,168,.75)';ctx.font='500 14px '+FONT;
     ctx.fillText(touchUI?'輕觸選擇妖王，再輕觸一次開戰':'A / D 選妖王　W / S 難度　Enter 開戰　Esc 返回',W/2,480);
-    ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
+    ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:10,y:14,w:140,h:62,act:()=>{titleSub='main';}});
   }else{
     ctx.fillStyle='#efe6d2';ctx.font='900 40px '+FONT;ctx.fillText('擇道',W/2,96);
     ctx.fillStyle='#c9bfa8';ctx.font='500 15px '+FONT;ctx.fillText('選擇難度，旅途中無法更改',W/2,126);
@@ -1847,7 +1852,7 @@ function drawTitle(){
       hitRects.push({x:cx,y:cy,w:cw,h:chh,act:()=>{if(diffSel===i)newRun(i);else diffSel=i;}});});
     ctx.fillStyle='rgba(201,191,168,.75)';ctx.font='500 14px '+FONT;
     ctx.fillText(touchUI?'輕觸選擇，再輕觸一次開始':'A / D 選擇　Enter 開始　Esc 返回',W/2,436);
-    ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
+    ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:10,y:14,w:140,h:62,act:()=>{titleSub='main';}});
   }
 }
 function drawShop(){
@@ -1867,13 +1872,13 @@ function drawShop(){
     ctx.textAlign='right';ctx.font='900 14px '+FONT;
     if(maxed){ctx.fillStyle='#9a8a6a';ctx.fillText('圓滿',px+pw-26,y+20);}
     else{ctx.fillStyle=run.ess>=c?'#ffe6a0':'#8a5a4a';ctx.fillText(c,px+pw-26,y+20);essIcon(px+pw-26-ctx.measureText(String(c)).width-10,y+15,5);}
-    hitRects.push({x:px+10,y,w:pw-20,h:rh-4,act:()=>{shopSel=i;buy(i);}});});
+    hitRects.push({x:px+10,y:y-2,w:pw-20,h:rh,act:()=>{if(touchUI&&shopSel!==i){shopSel=i;return;}shopSel=i;buy(i);}});});
   const ly=y0+UPG.length*rh,sel=shopSel===UPG.length;
   ctx.fillStyle=sel?'rgba(217,164,65,.14)':'rgba(255,255,255,.03)';ctx.fillRect(px+10,ly+4,pw-20,rh-4);
   ctx.textAlign='center';ctx.fillStyle=sel?'#ffe6a0':'#c9bfa8';ctx.font='900 16px '+FONT;ctx.fillText('離開',W/2,ly+25);
   hitRects.push({x:px+10,y:ly+4,w:pw-20,h:rh-4,act:closeShop});
   ctx.fillStyle='rgba(201,191,168,.6)';ctx.font='500 12px '+FONT;
-  ctx.fillText(touchUI?'輕觸項目即可修習':'W / S 選擇　J / Enter 修習　Esc / F 離開',W/2,py+ph-12);
+  ctx.fillText(touchUI?'輕觸選取，再輕觸一次修習':'W / S 選擇　J / Enter 修習　Esc / F 離開',W/2,py+ph-12);
 }
 function drawOverlay(){
   if(mode==='dead'&&deadT>.6){const a=Math.min(1,(deadT-.6)*1.5);ctx.fillStyle=`rgba(20,4,4,${.6*a})`;ctx.fillRect(0,0,W,H);
@@ -1908,12 +1913,12 @@ function drawOverlay(){
   else if(paused){ctx.fillStyle='rgba(6,6,8,.8)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';
     ctx.fillStyle='#efe6d2';ctx.font='900 44px '+FONT;ctx.fillText('暫停',W/2,92);
     ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText(CH[worldCh].name+' '+CH[worldCh].place+' · '+DIFF[run.diff].name+' · 用時 '+fmtTime(run.elapsed),W/2,120);
-    const rows=[['移動','A / D'],['跳躍','空白 / W'],['輕棍（四段）','J'],['蓄力重棍','按住 K'],['空中迴旋／落棍','空中 J／K'],['閃避','L / Shift'],
+    const rows=touchUI?[['移動','◀ ▶（可滑動切換）'],['跳躍','躍'],['輕棍（四段）','棍'],['蓄力重棍','按住 重'],['空中迴旋／落棍','空中 棍／重'],['閃避','閃'],['識破後反擊','閃避瞬間躲過攻擊，再按 棍'],['定身術／分身術','定／化'],['葫蘆','葫'],['土地祠修習','輕觸畫面提示'],['聲音、震動','設定']]:[['移動','A / D'],['跳躍','空白 / W'],['輕棍（四段）','J'],['蓄力重棍','按住 K'],['空中迴旋／落棍','空中 J／K'],['閃避','L / Shift'],
       ['識破後反擊','閃避瞬間躲過攻擊，再按 J'],['定身術／分身術','I／O'],['葫蘆','R'],['土地祠修習','靠近後按 F'],['聲音開關','M（目前：'+(muted?'關':'開')+'）'],['畫面震動','V（目前：'+(shakeOn?'開':'關')+'）']];
     ctx.font='500 16px '+FONT;rows.forEach((r,i)=>{ctx.textAlign='right';ctx.fillStyle='#d9a441';ctx.fillText(r[0],W/2-16,156+i*24);ctx.textAlign='left';ctx.fillStyle='#c9bfa8';ctx.fillText(r[1],W/2+16,156+i*24);});
     ctx.textAlign='center';ctx.fillStyle='#efe6d2';ctx.font='900 17px '+FONT;ctx.fillText('按 Esc、Enter 或輕觸畫面繼續',W/2,448);
     panelText('設定',484,'#e9dfc8',15,openPauseSettings);
-    panelText('回到標題（進度停在上次存檔）',520,'#c9bfa8',13,()=>{gauntletNext=0;shopSoon=0;paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
+    panelText('回到標題（進度停在上次存檔）',520,'#c9bfa8',15,()=>{gauntletNext=0;shopSoon=0;paused=false;mode='title';titleSub='main';saveCache=loadSave();});}
 }
 
 // ---------- story & bestiary ----------
@@ -1982,7 +1987,7 @@ function drawLore(){
     if(sel){ctx.fillStyle='rgba(217,164,65,.16)';ctx.fillRect(40,y,232,32);ctx.fillStyle='#d9a441';ctx.fillRect(40,y,3,32);}
     ctx.textAlign='left';ctx.fillStyle=has?(sel?'#ffe6a0':'#e9dfc8'):'rgba(201,191,168,.4)';ctx.font=(sel?'900':'500')+' 16px '+FONT;ctx.fillText(has?l.name:'？？？',58,y+22);
     if(l.where){ctx.textAlign='right';ctx.fillStyle='rgba(201,191,168,.5)';ctx.font='500 11px '+FONT;ctx.fillText(CH[l.where].name,262,y+21);}
-    hitRects.push({x:40,y,w:232,h:32,act:()=>{loreSel=i;}});});
+    hitRects.push({x:28,y:y-2,w:256,h:37,act:()=>{loreSel=i;}});});
   const px=292,py=112,pw=628,ph=372,L=LORE[loreSel],has=loreHas(L.id);
   ctx.fillStyle='rgba(20,17,14,.92)';ctx.fillRect(px,py,pw,ph);ctx.strokeStyle='rgba(217,164,65,.4)';ctx.lineWidth=1;ctx.strokeRect(px+.5,py+.5,pw-1,ph-1);
   const gl=ctx.createRadialGradient(px+160,py+230,10,px+160,py+230,180);gl.addColorStop(0,'rgba(217,164,65,.12)');gl.addColorStop(1,'rgba(217,164,65,0)');ctx.fillStyle=gl;ctx.fillRect(px+1,py+1,320,ph-50);
@@ -1999,12 +2004,13 @@ function drawLore(){
   }else if(L.where){ctx.fillStyle='#c9bfa8';ctx.font='500 14px '+FONT;ctx.fillText('出沒於：'+CH[L.where].name+' '+CH[L.where].place,tx,py+130);}
   ctx.textAlign='center';ctx.fillStyle='rgba(201,191,168,.7)';ctx.font='500 13px '+FONT;
   ctx.fillText(touchUI?'輕觸左側名錄翻閱 · 上方分頁切換':'W / S 翻閱　A / D 切換分頁　Esc 返回',W/2,516);
-  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:28,y:30,w:90,h:38,act:()=>{titleSub='main';}});
+  ctx.font='900 16px '+FONT;ctx.fillStyle='#c9bfa8';ctx.textAlign='left';ctx.fillText('‹ 返回',40,56);hitRects.push({x:10,y:14,w:140,h:62,act:()=>{titleSub='main';}});
 }
 
 // ---------- render ----------
 function render(){
   hitRects=[];
+  if(touchUI)pad.classList.toggle('menu',mode!=='play'||paused||shopOpen);
   ctx.setTransform(scale*dpr,0,0,scale*dpr,0,0);
   ctx.clearRect(0,0,W,H);
   if(mode==='title'){drawTitle();if(titleSub!=='lore')drawAmbient(false);if(toastMsg)panelText(toastMsg.text,26,'#e9dfc8',14);return;}
