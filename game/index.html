@@ -121,6 +121,7 @@ function resize(){
   scale=Math.min(innerWidth/W,innerHeight/H);
   cv.style.width=W*scale+'px';cv.style.height=H*scale+'px';
   cv.width=Math.round(W*scale*dpr);cv.height=Math.round(H*scale*dpr);
+  try{const r='|'+cacheRes().toFixed(4);for(const k in VIS)if(k.includes('|')&&!k.endsWith(r))delete VIS[k];layerKeys.length=0;}catch(e){} // caches not created yet on first call
 }
 addEventListener('resize',resize);resize();
 
@@ -714,7 +715,7 @@ function newRun(d){
   run={diff:d,ch:1,ng:0,up:{},ess:0,elapsed:0,stats:{hits:0,perfect:0,deaths:0,counters:0},cp:'start'};
   hintsSeen={};startStory('序',PROLOGUE,()=>startPlay('start'));
 }
-function continueRun(){run=loadSave();if(!run){saveCache=null;return;}run.stats=run.stats||{hits:0,perfect:0,deaths:0,counters:0};hintsSeen={};startPlay(run.cp||'start');}
+function continueRun(){run=loadSave();if(!run){saveCache=null;return;}run.stats=Object.assign({hits:0,perfect:0,deaths:0,counters:0,taken:0},run.stats||{});hintsSeen={};startPlay(run.cp||'start');}
 function startPlay(cp){gauntletNext=0;shopSoon=0;mode='play';paused=false;shopOpen=false;checkpoint=cp;resetWorld(cp);clearBuf();for(const k in held)held[k]=false;}
 function nearShrine(){if(mode!=='play'||bossStarted||!P||P.state==='dead')return null;return SHRINES.find(s=>Math.abs(P.x-s.x)<70)||null;}
 function openShop(sh){
@@ -747,7 +748,7 @@ function applyStats(){
 // ---------- entities ----------
 function newPlayer(x){return{x,y:GROUND,vx:0,vy:0,face:1,hp:ST.maxHp,maxHp:ST.maxHp,st:ST.maxSt,maxSt:ST.maxSt,exhaust:false,focus:0,gourd:ST.maxGourd,maxGourd:ST.maxGourd,
   state:'idle',t:0,combo:0,queued:false,inv:0,charge:0,hitSet:new Set(),atkId:0,spellCd:0,cloneCd:0,cloneT:0,anim:0,ground:true,
-  healed:false,perfect:false,counterT:0,lastAtkX:0,airUsed:false,heavyDmg:0,spent:0,boomed:false,midDone:false,trail:[],dodgeDir:1};}
+  healed:false,perfect:false,counterT:0,lastAtkX:0,airUsed:false,heavyDmg:0,spent:0,boomed:false,midDone:false,trail:[],dodgeDir:1,soul:0};}
 function base(type,x,hp,extra){hp=Math.round(hp*DIFF[run.diff].hp*(1+.4*(run.ng||0)));return Object.assign({type,x,y:GROUND,vx:0,vy:0,face:-1,hp,maxHp:hp,state:'idle',t:0,frozen:0,stun:0,
   anim:rnd(0,6),dead:false,alpha:1,flash:0,guardFlash:0,home:x,cd:rnd(.5,1.5),poise:100},extra||{});}
 const wolf=x=>base('wolf',x,48);
@@ -768,7 +769,7 @@ function resetWorld(cp){
   proj=[];parts=[];texts=[];decals=[];clones=[];spiritFx=[];banner=null;cine=null;subtitle=null;hitstop=0;timeScale=1;slowT=0;shake=0;zoom=1;zoomT=1;zoomTimer=0;zoomFocus=null;
   arena=null;bossStarted=false;boss=null;hintMsg=null;hintQueue=[];worldCh=run.ch;
   applyStats();
-  if(cp==='rush'){P=newPlayer(ARENA.l+200);enemies=[];shrineLit=true;if(run.carry){P.hp=run.carry.hp;P.gourd=run.carry.gourd;P.focus=run.carry.focus;run.carry=null;}else run.elapsed=0;camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;startBoss();return;}
+  if(cp==='rush'){P=newPlayer(ARENA.l+200);enemies=[];shrineLit=true;if(run.carry){P.hp=run.carry.hp;P.gourd=run.carry.gourd;P.focus=run.carry.focus;P.soul=run.carry.soul||0;run.carry=null;}else run.elapsed=0;camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;startBoss();return;}
   if(cp==='shrine'){P=newPlayer(SHRINE_X+30);enemies=[];shrineLit=true;}
   else{P=newPlayer(150);shrineLit=false;enemies=spawnChapter(run.ch);showBanner(CH[run.ch].name,CH[run.ch].place,4.2,CH[run.ch].verse);}
   camX=clamp(P.x-W*.38,0,WORLD-W);fadeIn=1;
@@ -1379,7 +1380,7 @@ function update(rdt){
   if(mode==='story'){if(story)story.t+=rdt;return;}
   if(mode==='title'||paused||shopOpen)return;
   if(subtitle){subtitle.life-=rdt;if(subtitle.life<=0)subtitle=null;}
-  if(gauntletNext>0){gauntletNext-=rdt;if(gauntletNext<=0&&mode==='play'){run.carry={hp:Math.min(P.maxHp,P.hp+30),gourd:Math.min(P.maxGourd,P.gourd+1),focus:P.focus};run.ch++;resetWorld('rush');return;}}
+  if(gauntletNext>0){gauntletNext-=rdt;if(gauntletNext<=0&&mode==='play'){run.carry={hp:Math.min(P.maxHp,P.hp+30),gourd:Math.min(P.maxGourd,P.gourd+1),focus:P.focus,soul:P.soul||0};run.ch++;resetWorld('rush');clearBuf();return;}}
   if(shopSoon>0){shopSoon-=rdt;if(shopSoon<=0&&mode==='play'){openShop(SHRINES[0]);return;}}
   for(const k in buf)buf[k]=Math.max(0,buf[k]-rdt);
   if(slowT>0){slowT-=rdt;if(slowT<=0)timeScale=1;}
@@ -3277,7 +3278,7 @@ function drawOverlay(){
     brushStroke(W/2-185,H/2-70,370*ease(winT/.7),74,'rgba(0,0,0,.6)',2.2);ctx.fillStyle='#d9a441';ctx.font='900 58px '+FONT;ctx.fillText(CH[clearedCh].clear,W/2,H/2-52);
     ctx.fillStyle='#efe6d2';ctx.font='500 17px '+FONT;ctx.fillText(CH[clearedCh].epi,W/2,H/2-6);
     ctx.fillStyle='#c9bfa8';ctx.font='500 16px '+FONT;ctx.fillText(`目前用時 ${fmtTime(run.elapsed)}　身上靈蘊 ${run.ess}`,W/2,H/2+32);
-    ctx.font='500 14px '+FONT;ctx.fillText('進度已存。獲得精魄「'+SPIRITS[clearedCh].name+'」：'+SPIRITS[clearedCh].desc+'（'+(touchUI?'魄':'U')+'）',W/2,H/2+58);
+    ctx.font='500 14px '+FONT;ctx.fillText(run.ng?'進度已存。下一回開始時可先於土地祠修習。':'進度已存。獲得精魄「'+SPIRITS[clearedCh].name+'」：'+SPIRITS[clearedCh].desc+'（'+(touchUI?'魄':'U')+'）',W/2,H/2+58);
     if(winT>2){ctx.fillStyle='#ffe6a0';ctx.font='900 18px '+FONT;ctx.fillText('進入'+CH[clearedCh+1].name+' · '+CH[clearedCh+1].place+'（Enter／輕觸）',W/2,H/2+102);}ctx.globalAlpha=1;}
   if(mode==='win'&&run.rush){const a=Math.min(1,winT*.8);ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.textAlign='center';
     ctx.fillStyle='#c9bfa8';ctx.font='500 20px '+FONT;ctx.fillText('挑戰成功 · '+DIFF[run.diff].name,W/2,H/2-96);
@@ -3321,8 +3322,8 @@ function soulTick(){
     if(was<100&&P.soul>=100){addText(P.x,P.y-140,'魄滿','#ffd36b',22);ring(P.x,P.y-40,70,'rgba(255,211,107,.8)');}}
 }
 function castSpirit(){
-  const own=ownedSpirits();if(!own.length)return;let k=curSpirit();
-  if(held.down||P.soul<100){
+  if(mode!=='play')return;const own=ownedSpirits();if(!own.length)return;let k=curSpirit();
+  if(held.down||!(P.soul>=100)){
     if(own.length>1){run.spirit=own[(own.indexOf(k)+1)%own.length];addText(P.x,P.y-124,'精魄：'+SPIRITS[run.spirit].name,'#e9dfc8',17);}
     else addText(P.x,P.y-124,'魄未滿 '+Math.floor(P.soul)+'%','#9aa3a8',15);
     return;}
@@ -3333,6 +3334,7 @@ function castSpirit(){
   inkBurst(P.x,P.y-50,6,180,10);
 }
 function spiritHit(box,set,hb,ox,main,cast){
+  if(mode!=='play')return;
   cast=cast||P.spiritCast;
   for(const e of enemies){if(e.dead||e.state==='dying'||set.has(e))continue;if(overlap(box,enemyBox(e))){set.add(e);damageEnemy(e,hb,1,ox,main);
     if(cast&&(e.dead||e.state==='dying')&&++cast.kills>=3)achUnlock('spiritkill');if(hb.chill&&!isBoss(e)&&!e.dead&&e.state!=='dying')e.frozen=Math.max(e.frozen,1.1);}}
@@ -3430,7 +3432,7 @@ function brushStroke(x,y,w,h,col,seed){
   for(let k=0;k<6;k++){const yy=y+(k-2.5)*h*.13,x0=x+w*(.62+((k*.37+seed)%1)*.2);ctx.fillRect(x0,yy,Math.max(0,x+w*(1.02-k*.012)-x0),1.3);}
 }
 function drawCineBars(){
-  if(!cine)return;const k=ease(Math.min(cine.t/.35,(cine.dur-cine.t)/.45,1)),bh=(cine.rage?34:46)*k;if(bh<=0)return;
+  if(!cine||paused||shopOpen)return;const k=ease(Math.min(cine.t/.35,(cine.dur-cine.t)/.45,1)),bh=(cine.rage?34:46)*k;if(bh<=0)return;
   if(cine.rage){const col=cine.ch===2?'110,170,220':cine.ch===3?'255,110,40':'200,40,24',a=k*(.42+Math.sin(cine.t*18)*.12);
     const g=ctx.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.85);g.addColorStop(0,`rgba(${col},0)`);g.addColorStop(1,`rgba(${col},${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
   ctx.fillStyle='#050404';ctx.fillRect(0,0,W,bh);ctx.fillRect(0,H-bh,W,bh);
@@ -3671,7 +3673,7 @@ function render(){
   if(timeScale<1){ctx.fillStyle='rgba(217,164,65,.08)';ctx.fillRect(0,0,W,H);}
   if(P.hp<P.maxHp*.3&&mode==='play'){ctx.fillStyle=`rgba(140,20,10,${.12+Math.sin(clock*5)*.06})`;ctx.fillRect(0,0,W,H);}
   drawCineBars();drawHUD();drawSpiritHUD();drawBanner();drawCineCard();
-  if(hintMsg&&!paused&&!shopOpen){ctx.globalAlpha=Math.min(1,hintMsg.life*2,(5-hintMsg.life)*4);panelText(hintMsg.text,96,'#e9dfc8',15);ctx.globalAlpha=1;}
+  if(hintMsg&&!paused&&!shopOpen){ctx.globalAlpha=Math.min(1,hintMsg.life*2,(5-hintMsg.life)*4);panelText(hintMsg.text,132,'#e9dfc8',15);ctx.globalAlpha=1;}
   const sh=!shopOpen&&!paused&&nearShrine();
   if(sh)panelText(touchUI?'輕觸此處：歇息 · 修習':'按 F 歇息 · 修習',H-70,'#ffe6a0',15,()=>{if(P.ground&&['idle','run','jump'].includes(P.state))openShop(sh);});
   if(!bossStarted&&mode==='play'&&P.x<300&&P.x>150&&run.elapsed<8&&!sh){ctx.textAlign='center';ctx.fillStyle='rgba(233,223,200,.7)';ctx.font='500 15px '+FONT;ctx.fillText('向右前行 →',W/2,H-30);}
@@ -3679,7 +3681,7 @@ function render(){
   if(fadeIn>0)drawInkFade(fadeIn);
   if(shopOpen)drawShop();
   drawOverlay();
-  if(toastMsg)panelText(toastMsg.text,shopOpen?468:(mode==='clear'||mode==='win'||mode==='dead')?H-34:130,'#d9a441',14);
+  if(toastMsg)panelText(toastMsg.text,shopOpen?468:(mode==='clear'||mode==='win'||mode==='dead'||paused)?H-34:130,'#d9a441',14);
 }
 function drawAmbient(p2){
   if(worldCh===3&&mode!=='title'){ctx.fillStyle=p2?'rgba(255,200,120,.9)':'rgba(255,140,60,.8)';for(const a of ambient)ctx.fillRect(a.x,a.y,a.s+.8,a.s+.8);return;}
