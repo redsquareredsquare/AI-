@@ -477,7 +477,7 @@ function hitsLine(res){const agg={};res.forEach(r=>Object.entries(r.hits||{}).fo
 async function freshPage(b,errs){
  const pg=await b.newPage({viewport:{width:960,height:540}});
  pg.on('pageerror',e=>errs.push(e.message+' @'+(e.stack||'').split('\n')[1]));
- await pg.goto(URL);await pg.evaluate(()=>{try{localStorage.clear();}catch(e){}});
+ await pg.goto(URL);await pg.evaluate(()=>{try{localStorage.clear();localStorage.setItem('gunpo-ach',JSON.stringify({u:['journey'],c:0,s:0}));}catch(e){}}); // unlock the secret 4th rush boss
  await pg.reload();await pg.waitForTimeout(800);
  await pg.evaluate(()=>__game.halt());
  await pg.evaluate(installBot,{generic:GENERIC});
